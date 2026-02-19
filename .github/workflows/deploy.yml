@@ -1,0 +1,66 @@
+name: Deploy to Production (Vercel)
+env:
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  # TODO: Add any other checks and tests later
+  eslint-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' 
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+    
+  deploy-prod:
+    needs: eslint-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+      
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=$VERCEL_TOKEN
+      
+      - name: Check Vercel File Usage
+        run: |
+          OUTPUT=$(du --inodes -d 5 .vercel/output)
+          echo "$OUTPUT"
+          LAST=$(echo "$OUTPUT" | tail -n 1)
+          PERCENTAGE=$(echo "$LAST" | awk 'BEGIN {maxtotal=15000} { printf "%.2f%%", ($1/maxtotal*100) }')
+          echo "Vercel file usage percentage" >> $GITHUB_STEP_SUMMARY
+          echo "$PERCENTAGE" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Deploy to Vercel
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN --confirm)
+          
+          # Menggunakan metode output GitHub Actions versi terbaru
+          echo "deploy_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          
+          echo "Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "Deployed URL: $DEPLOY_URL" >> $GITHUB_STEP_SUMMARY
+          echo "Deployment completed successfully!" >> $GITHUB_STEP_SUMMARY

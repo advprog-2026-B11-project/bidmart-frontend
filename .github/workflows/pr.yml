@@ -1,0 +1,27 @@
+name: Pull Request Check (Gatekeeper)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - staging
+
+jobs:
+  # TODO: Add Unit Tests (Jest) and SonarCloud checks later
+  eslint-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
