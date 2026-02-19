@@ -1,4 +1,4 @@
-name: Pull Request Check (Gatekeeper)
+name: Pull Request Check
 
 on:
   workflow_dispatch:
