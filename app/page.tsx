@@ -71,7 +71,6 @@ export default function Home() {
 
       <h3>Data Wallet Saat Ini:</h3>
       <ul style={{ marginTop: "10px", paddingLeft: "20px" }}>
-        {wallets.length === 0 ? <p style={{ color: "gray" }}>Belum ada data...</p> : null}
         {wallets.map((wallet: Wallet) => (
           <li key={wallet.id} style={{ marginBottom: "8px" }}>
             <strong>{wallet.username}</strong> - Saldo: Rp {wallet.balance}
