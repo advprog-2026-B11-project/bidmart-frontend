@@ -2,17 +2,19 @@
 import { useState, useEffect } from "react";
 
 interface Wallet {
-  id: string;
+  id: number; 
   username: string;
   balance: number;
 }
 
 export default function Home() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const API_URL = "https://bidmart-backend-wn6p.onrender.com"; 
 
   const fetchWallets = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/wallet"); 
+      const response = await fetch(`${API_URL}/api/wallet`); 
       if (!response.ok) throw new Error("Gagal mengambil data");
       const data = await response.json();
       setWallets(data);
@@ -22,13 +24,19 @@ export default function Home() {
   };
 
   const createDummy = async () => {
+    setIsLoading(true); 
     try {
-      await fetch("http://localhost:8080/api/wallet/init-dummy?username=PengujiLokal", {
-        method: "POST"
-      });
-      fetchWallets(); 
+      const response = await fetch(`${API_URL}/api/wallet/init-dummy?username=PengujiVercel`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      await fetchWallets();
     } catch (error) {
       console.error("Error menambah data:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -39,20 +47,29 @@ export default function Home() {
   return (
     <div style={{ padding: "40px", fontFamily: "sans-serif", maxWidth: "600px", margin: "0 auto" }}>
       <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}>
-        Demo Integrasi BidMart
+        Demo Integrasi BidMart - B11
       </h1>
       
       <div style={{ padding: "20px", border: "1px solid #ccc", borderRadius: "8px", marginBottom: "20px" }}>
-        <p style={{ marginBottom: "15px" }}>Tekan tombol di bawah untuk menambah data dompet dummy dari Frontend ke Database Neon.</p>
+        <p style={{ marginBottom: "15px" }}>Klik untuk menambah data Wallet</p>
         <button 
           onClick={createDummy} 
-          style={{ padding: "10px 20px", backgroundColor: "#0070f3", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}
+          disabled={isLoading}
+          style={{ 
+            padding: "10px 20px", 
+            backgroundColor: isLoading ? "#ccc" : "#0070f3", 
+            color: "white", 
+            border: "none", 
+            borderRadius: "5px", 
+            cursor: isLoading ? "not-allowed" : "pointer", 
+            fontWeight: "bold" 
+          }}
         >
-          + Tambah Dompet Dummy
+          {isLoading ? "Menyimpan ke DB..." : "+ Tambah Dompet Dummy"}
         </button>
       </div>
 
-      <h3>Data Dompet di Database (Neon DB):</h3>
+      <h3>Data Wallet Saat Ini:</h3>
       <ul style={{ marginTop: "10px", paddingLeft: "20px" }}>
         {wallets.length === 0 ? <p style={{ color: "gray" }}>Belum ada data...</p> : null}
         {wallets.map((wallet: Wallet) => (
