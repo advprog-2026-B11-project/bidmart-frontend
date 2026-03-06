@@ -41,6 +41,7 @@ export default function WalletDemo() {
                 await fetchWallets();
             }
         } catch (error) {
+            console.error("Register Error:", error);
             alert("Gagal! Cek apakah @CrossOrigin sudah ada di BE.");
         } finally {
             setIsLoading(false);
