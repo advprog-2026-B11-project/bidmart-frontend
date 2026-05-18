@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useState } from "react";
+import Image from "next/image";
 import { cn, getInitials } from "@/lib/utils";
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -16,6 +17,14 @@ const sizeMap = {
   md: "h-10 w-10 text-sm",
   lg: "h-12 w-12 text-base",
   xl: "h-16 w-16 text-lg",
+};
+
+const pixelSizeMap = {
+  xs: 24,
+  sm: 32,
+  md: 40,
+  lg: 48,
+  xl: 64,
 };
 
 export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
@@ -37,11 +46,14 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
         {...props}
       >
         {showImage ? (
-          <img
+          <Image
             src={src}
             alt={alt ?? name}
+            width={pixelSizeMap[size]}
+            height={pixelSizeMap[size]}
             className="h-full w-full object-cover"
             onError={() => setImgError(true)}
+            unoptimized
           />
         ) : (
           <span aria-label={alt ?? name}>{initials || "?"}</span>

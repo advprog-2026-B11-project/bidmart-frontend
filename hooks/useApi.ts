@@ -11,7 +11,10 @@ interface UseApiResult<T> {
 
 export function useApi<T>(fn: () => Promise<T>): UseApiResult<T> {
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+
+  useEffect(() => {
+    fnRef.current = fn;
+  });
 
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);

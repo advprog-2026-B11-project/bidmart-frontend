@@ -50,27 +50,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("[AuthProvider] mount — hydrating from storage");
-    const token = getAccessToken();
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-    setAccessToken(token);
-    const stored = getUser();
-    if (stored) setUserState(stored);
+    async function hydrate() {
+      console.log("[AuthProvider] mount — hydrating from storage");
+      const token = getAccessToken();
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      setAccessToken(token);
+      const stored = getUser();
+      if (stored) setUserState(stored);
 
-    usersApi
-      .getMyProfile()
-      .then((profile) => {
+      try {
+        const profile = await usersApi.getMyProfile();
         setUserState(profile);
         setUser(profile);
-      })
-      .catch(() => {
+      } catch {
         setUserState(null);
         setAccessToken(null);
-      })
-      .finally(() => setIsLoading(false));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    hydrate();
   }, []);
 
   const login = useCallback(
