@@ -196,10 +196,108 @@ export interface PaginatedResponse<T> {
   last: boolean;
 }
 
-export interface ApiError {
+export interface ApiErrorResponse {
   status: number;
-  error: string;
+  error?: string;
+  code?: string;
   message: string;
   timestamp: string;
-  path: string;
+  path?: string;
+}
+
+/* ─── Auth (extended) ────────────────────────────────────────────────────── */
+
+export interface MfaRequiredResponse {
+  mfaRequired: true;
+  tempToken: string;
+}
+
+export type LoginResponse = AuthResponse | MfaRequiredResponse;
+
+export interface LoginMfaRequest {
+  tempToken: string;
+  code: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  avatarUrl?: string;
+}
+
+/* ─── Sessions ───────────────────────────────────────────────────────────── */
+
+export interface DeviceSession {
+  id: string;
+  deviceInfo: string;
+  ipAddress: string;
+  createdAt: string;
+  lastActiveAt: string;
+  current: boolean;
+}
+
+/* ─── Wallet (extended) ──────────────────────────────────────────────────── */
+
+export interface WithdrawRequest {
+  amount: number;
+  bankAccount: string;
+  bankName: string;
+}
+
+/* ─── Listing (extended) ─────────────────────────────────────────────────── */
+
+export interface ListingSearchParams {
+  keyword?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  page?: number;
+  size?: number;
+}
+
+/* ─── Bid (extended) ─────────────────────────────────────────────────────── */
+
+export interface MinimumBidResponse {
+  minimumBid: number;
+}
+
+/* ─── Category (extended) ────────────────────────────────────────────────── */
+
+export interface CreateCategoryRequest {
+  name: string;
+  slug: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+/* ─── Notification (extended) ────────────────────────────────────────────── */
+
+export interface NotificationPreferences {
+  bidPlaced: boolean;
+  bidOutbid: boolean;
+  auctionWon: boolean;
+  auctionEnded: boolean;
+  orderUpdate: boolean;
+  paymentSuccess: boolean;
+  system: boolean;
+}
+
+/* ─── Order (extended) ───────────────────────────────────────────────────── */
+
+export interface UpdateTrackingRequest {
+  trackingNumber: string;
+  carrier?: string;
+}
+
+export interface DisputeRequest {
+  reason: string;
+  description: string;
+}
+
+export interface ResolveDisputeRequest {
+  resolution: string;
+  description?: string;
 }
