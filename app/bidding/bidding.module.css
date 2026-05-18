@@ -1,0 +1,277 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f8fc 0%, #eef3f9 100%);
+  color: #1a2230;
+  padding: 28px 20px 56px;
+}
+
+.hero {
+  max-width: 1120px;
+  margin: 0 auto 16px;
+}
+
+.title {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 8px 0;
+  color: #4c5668;
+  max-width: 920px;
+}
+
+.metaLine {
+  margin: 0;
+  color: #6a7486;
+  font-size: 0.9rem;
+}
+
+.alertContainer {
+  max-width: 1120px;
+  margin: 0 auto 12px;
+}
+
+.alert {
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  font-size: 0.92rem;
+}
+
+.alertSuccess {
+  background: #e9f8ee;
+  color: #156a2f;
+  border-color: #b6e4c3;
+}
+
+.alertError {
+  background: #fff0f0;
+  color: #8b1d1d;
+  border-color: #f2b5b5;
+}
+
+.alertInfo {
+  background: #edf4ff;
+  color: #1c4f8f;
+  border-color: #bcd3f5;
+}
+
+.gridLayout {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.mainColumn,
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #dee6f0;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(34, 53, 84, 0.06);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.cardSubtitle {
+  margin: 4px 0 0;
+  color: #677184;
+  font-size: 0.88rem;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.formColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > span {
+  font-size: 0.83rem;
+  color: #5f6a7f;
+}
+
+.field input,
+.field select {
+  border: 1px solid #ccd5e2;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 0.93rem;
+  outline: none;
+  background: #fff;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #3073ca;
+  box-shadow: 0 0 0 3px rgba(48, 115, 202, 0.12);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.buttonPrimary,
+.buttonSecondary,
+.buttonGhost {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.buttonPrimary {
+  background: #1f4b87;
+  color: #fff;
+  border-color: #1f4b87;
+}
+
+.buttonPrimary:hover {
+  background: #173d71;
+}
+
+.buttonSecondary {
+  background: #ebf2fc;
+  color: #1f4b87;
+  border-color: #bad0ee;
+}
+
+.buttonSecondary:hover {
+  background: #dce9fb;
+}
+
+.buttonGhost {
+  background: #fff;
+  color: #33415a;
+  border-color: #ccd5e2;
+}
+
+.buttonGhost:hover {
+  background: #f7f9fc;
+}
+
+.buttonPrimary:disabled,
+.buttonSecondary:disabled,
+.buttonGhost:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.helperText {
+  margin: 10px 0 0;
+  color: #5e697c;
+  font-size: 0.86rem;
+}
+
+.inlineError {
+  margin: 0;
+  color: #ad2d2d;
+  font-size: 0.85rem;
+}
+
+.mutedText {
+  margin: 0;
+  color: #718095;
+  font-size: 0.9rem;
+}
+
+.detailList {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.detailList > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.detailList span {
+  color: #6f7a8d;
+  font-size: 0.87rem;
+}
+
+.detailList strong {
+  font-size: 0.92rem;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid #e7edf4;
+  padding: 8px 6px;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.table th {
+  color: #60708a;
+  font-weight: 600;
+}
+
+.monoText {
+  font-family: var(--font-geist-mono), Consolas, monospace;
+}
+
+@media (max-width: 980px) {
+  .gridLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
