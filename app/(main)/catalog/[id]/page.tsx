@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,22 +9,20 @@ import {
   ChevronUp,
   Clock,
   Gavel,
-  LogIn,
-  TrendingUp,
 } from "lucide-react";
 import { ListingImageGallery } from "@/components/features/listings/ListingImageGallery";
 import { BidHistory } from "@/components/features/listings/BidHistory";
 import { SellerInfoCard } from "@/components/features/listings/SellerInfoCard";
 import { CountdownTimer } from "@/components/features/listings/CountdownTimer";
+import { BidForm } from "@/components/features/bidding/BidForm";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { formatRupiah } from "@/lib/utils";
-import { AuctionStatus } from "@/constants/enums";
-import { ROUTES } from "@/constants/routes";
+import { AuctionStatus, NotificationType } from "@/constants/enums";
 import * as listingsApi from "@/lib/api/listings";
 import * as bidsApi from "@/lib/api/bids";
-import type { Listing } from "@/types/api";
+import type { Listing, Notification } from "@/types/api";
 
 /* ─── Status config ─────────────────────────────────────────────────────── */
 
@@ -32,12 +30,12 @@ const statusConfig: Record<
   string,
   { label: string; variant: "success" | "warning" | "danger" | "info" | "default"; pulse?: boolean }
 > = {
-  ACTIVE:    { label: "Aktif",       variant: "success"                },
+  ACTIVE:    { label: "Aktif",        variant: "success"               },
   EXTENDED:  { label: "Diperpanjang", variant: "warning", pulse: true  },
-  ENDED:     { label: "Berakhir",    variant: "default"                },
-  SOLD:      { label: "Terjual",     variant: "info"                   },
-  DRAFT:     { label: "Draft",       variant: "default"                },
-  CANCELLED: { label: "Dibatalkan",  variant: "danger"                 },
+  ENDED:     { label: "Berakhir",     variant: "default"               },
+  SOLD:      { label: "Terjual",      variant: "info"                  },
+  DRAFT:     { label: "Draft",        variant: "default"               },
+  CANCELLED: { label: "Dibatalkan",   variant: "danger"                },
 };
 
 /* ─── Skeleton ───────────────────────────────────────────────────────────── */
@@ -45,16 +43,13 @@ const statusConfig: Record<
 function DetailSkeleton() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Breadcrumb */}
       <div className="mb-6 flex gap-2">
         {[60, 48, 80, 120].map((w) => (
           <Skeleton key={w} className="h-4 rounded" style={{ width: w }} />
         ))}
       </div>
       <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
-        {/* Image */}
         <Skeleton className="aspect-square w-full rounded-xl" />
-        {/* Panel */}
         <div className="space-y-5">
           <Skeleton className="h-5 w-24 rounded-full" />
           <Skeleton className="h-8 w-full rounded" />
@@ -68,72 +63,17 @@ function DetailSkeleton() {
   );
 }
 
-/* ─── Bid Form Placeholder ───────────────────────────────────────────────── */
+/* ─── Polling interval ───────────────────────────────────────────────────── */
 
-interface BidFormProps {
-  listing: Listing;
-  minimumBid: number | null;
-}
+const POLL_INTERVAL_MS = 8_000;
 
-function BidFormPlaceholder({ listing, minimumBid }: BidFormProps) {
-  const { isAuthenticated } = useAuth();
-  const [amount, setAmount] = useState("");
+/* ─── Listing-related notification types ────────────────────────────────── */
 
-  if (!isAuthenticated) {
-    return (
-      <Link
-        href={`${ROUTES.AUTH.LOGIN}?next=/catalog/${listing.id}`}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-      >
-        <LogIn className="h-4 w-4" />
-        Login untuk memasang bid
-      </Link>
-    );
-  }
-
-  if (listing.status !== AuctionStatus.ACTIVE) {
-    return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-center text-sm text-slate-400">
-        Lelang ini sudah berakhir.
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      {minimumBid !== null && (
-        <p className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
-          <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
-          Min. bid berikutnya:{" "}
-          <span className="font-semibold tabular-nums text-blue-700">
-            {formatRupiah(minimumBid)}
-          </span>
-        </p>
-      )}
-      <div className="flex gap-2">
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder={minimumBid ? String(minimumBid) : "Jumlah bid…"}
-          min={minimumBid ?? 0}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-        />
-        <button
-          disabled
-          title="Bidding akan tersedia di Stage 6"
-          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white opacity-60 cursor-not-allowed"
-        >
-          <Gavel className="h-4 w-4" />
-          Bid
-        </button>
-      </div>
-      <p className="mt-2 text-center text-[11px] text-slate-400">
-        Fitur bidding akan aktif di tahap berikutnya.
-      </p>
-    </div>
-  );
-}
+const LISTING_NOTIFICATION_TYPES: string[] = [
+  NotificationType.BID_PLACED,
+  NotificationType.BID_OUTBID,
+  NotificationType.AUCTION_ENDED,
+];
 
 /* ─── Detail Page ─────────────────────────────────────────────────────────── */
 
@@ -141,13 +81,17 @@ export default function ListingDetailPage() {
   const params = useParams();
   const id     = params.id as string;
 
-  const [listing,    setListing]    = useState<Listing | null>(null);
-  const [minimumBid, setMinimumBid] = useState<number | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(false);
+  const [listing,     setListing]     = useState<Listing | null>(null);
+  const [minimumBid,  setMinimumBid]  = useState<number | null>(null);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyKey,  setHistoryKey]  = useState(0);
 
   const { isAuthenticated } = useAuth();
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /* ── Fetch listing + minimum bid ── */
 
   const doFetch = useCallback((): Promise<void> => {
     return listingsApi
@@ -157,9 +101,75 @@ export default function ListingDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const fetchMinimumBid = useCallback(() => {
+    if (!isAuthenticated) return;
+    bidsApi.getMinimumBid(id).then((res) => setMinimumBid(res.minimumBid)).catch(() => {});
+  }, [id, isAuthenticated]);
+
+  const refetchAll = useCallback(() => {
+    doFetch();
+    fetchMinimumBid();
+    setHistoryKey((k) => k + 1);
+  }, [doFetch, fetchMinimumBid]);
+
+  /* Initial load */
   useEffect(() => {
     doFetch();
   }, [doFetch]);
+
+  /* Fetch minimum bid when listing is active + authenticated */
+  useEffect(() => {
+    if (!listing) return;
+    const isActive =
+      listing.status === AuctionStatus.ACTIVE ||
+      listing.status === AuctionStatus.EXTENDED;
+    if (!isActive || !isAuthenticated) return;
+    fetchMinimumBid();
+  }, [listing, isAuthenticated, fetchMinimumBid]);
+
+  /* ── Polling: every 8 s while tab is visible ── */
+
+  useEffect(() => {
+    if (!listing) return;
+    const isActive =
+      listing.status === AuctionStatus.ACTIVE ||
+      listing.status === AuctionStatus.EXTENDED;
+    if (!isActive) return;
+
+    function scheduleNext() {
+      pollTimerRef.current = setInterval(() => {
+        if (document.visibilityState === "visible") refetchAll();
+      }, POLL_INTERVAL_MS);
+    }
+
+    scheduleNext();
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [listing, refetchAll]);
+
+  /* ── WebSocket notification listener ── */
+
+  useEffect(() => {
+    function onWsNotification(e: Event) {
+      const notification = (e as CustomEvent<Notification>).detail;
+      const isForThisListing = notification.referenceId === id;
+      const isRelevantType   = LISTING_NOTIFICATION_TYPES.includes(notification.type);
+
+      if (isForThisListing && isRelevantType) {
+        refetchAll();
+      }
+    }
+
+    window.addEventListener("ws-notification", onWsNotification);
+    return () => window.removeEventListener("ws-notification", onWsNotification);
+  }, [id, refetchAll]);
+
+  /* ── Bid success handler ── */
+
+  const handleBidSuccess = useCallback(() => {
+    refetchAll();
+  }, [refetchAll]);
 
   const handleRetry = useCallback(() => {
     setLoading(true);
@@ -168,13 +178,9 @@ export default function ListingDetailPage() {
     doFetch();
   }, [doFetch]);
 
-  /* Fetch minimum bid for active listings when authenticated */
-  useEffect(() => {
-    if (!listing || listing.status !== AuctionStatus.ACTIVE || !isAuthenticated) return;
-    bidsApi.getMinimumBid(id).then((res) => setMinimumBid(res.minimumBid)).catch(() => {});
-  }, [listing, id, isAuthenticated]);
+  /* ── Render ── */
 
-  if (loading)  return <DetailSkeleton />;
+  if (loading)         return <DetailSkeleton />;
   if (error || !listing) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
@@ -191,6 +197,7 @@ export default function ListingDetailPage() {
 
   const statusInfo = statusConfig[listing.status] ?? { label: listing.status, variant: "default" as const };
   const isClosed   = listing.status === AuctionStatus.ENDED || listing.status === AuctionStatus.SOLD;
+  const isActive   = listing.status === AuctionStatus.ACTIVE || listing.status === AuctionStatus.EXTENDED;
   const price      = listing.totalBids > 0 ? listing.currentPrice : listing.startingPrice;
 
   return (
@@ -209,7 +216,7 @@ export default function ListingDetailPage() {
           {listing.category.name}
         </Link>
         <ArrowRight className="h-3 w-3" />
-        <span className="max-w-45 truncate text-slate-600">{listing.title}</span>
+        <span className="max-w-[180px] truncate text-slate-600">{listing.title}</span>
       </nav>
 
       {/* Closed banner */}
@@ -228,14 +235,10 @@ export default function ListingDetailPage() {
 
       <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
 
-        {/* ── Left: image gallery ───────────────────────────────────────── */}
+        {/* ── Left: image gallery + description ──────────────────────── */}
         <div>
-          <ListingImageGallery
-            imageUrls={listing.imageUrls}
-            title={listing.title}
-          />
+          <ListingImageGallery imageUrls={listing.imageUrls} title={listing.title} />
 
-          {/* Description */}
           <div className="mt-8">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-slate-400">
               Deskripsi
@@ -248,7 +251,7 @@ export default function ListingDetailPage() {
           </div>
         </div>
 
-        {/* ── Right: sticky panel ──────────────────────────────────────── */}
+        {/* ── Right: sticky panel ────────────────────────────────────── */}
         <div>
           <div className="lg:sticky lg:top-24 space-y-5">
 
@@ -278,7 +281,7 @@ export default function ListingDetailPage() {
               </p>
               <p
                 className={`font-serif text-3xl font-bold tabular-nums ${
-                  listing.status === AuctionStatus.ACTIVE ? "text-yellow-500" : "text-slate-800"
+                  isActive ? "text-yellow-500" : "text-slate-800"
                 }`}
               >
                 {formatRupiah(price)}
@@ -291,7 +294,7 @@ export default function ListingDetailPage() {
             </div>
 
             {/* Countdown */}
-            {listing.status === AuctionStatus.ACTIVE && (
+            {isActive && (
               <div className="flex items-center gap-2.5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
                 <Clock className="h-4 w-4 shrink-0 text-blue-500" />
                 <div>
@@ -304,7 +307,11 @@ export default function ListingDetailPage() {
             )}
 
             {/* Bid form */}
-            <BidFormPlaceholder listing={listing} minimumBid={minimumBid} />
+            <BidForm
+              listing={listing}
+              minimumBid={minimumBid}
+              onBidSuccess={handleBidSuccess}
+            />
 
             {/* Bid history accordion */}
             <div className="rounded-xl border border-slate-200 bg-white">
@@ -327,7 +334,7 @@ export default function ListingDetailPage() {
               </button>
               {historyOpen && (
                 <div className="border-t border-slate-100 px-4 pb-4 pt-3">
-                  <BidHistory listingId={listing.id} />
+                  <BidHistory key={historyKey} listingId={listing.id} />
                 </div>
               )}
             </div>

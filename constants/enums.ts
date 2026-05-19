@@ -1,6 +1,7 @@
 export const AuctionStatus = {
   DRAFT:     "DRAFT",
   ACTIVE:    "ACTIVE",
+  EXTENDED:  "EXTENDED",
   ENDED:     "ENDED",
   CANCELLED: "CANCELLED",
   SOLD:      "SOLD",
