@@ -73,6 +73,8 @@ export interface Transaction {
 export interface TopUpRequest {
   amount: number;
   paymentMethod: PaymentMethod;
+  bankName?: string;
+  accountNumber?: string;
 }
 
 /* ─── Category ───────────────────────────────────────────────────────────── */
@@ -100,6 +102,7 @@ export interface Listing {
   category: Category;
   seller: UserProfile;
   totalBids: number;
+  currentHighestBidderId?: string;
   startAt: string;
   endAt: string;
   createdAt: string;
@@ -131,11 +134,14 @@ export interface Bid {
   amount: number;
   isWinning: boolean;
   createdAt: string;
+  listing?: Listing;
 }
 
 export interface PlaceBidRequest {
   listingId: string;
   amount: number;
+  proxyBid?: boolean;
+  proxyMaxLimit?: number;
 }
 
 /* ─── Order ──────────────────────────────────────────────────────────────── */

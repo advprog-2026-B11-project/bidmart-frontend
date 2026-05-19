@@ -14,10 +14,14 @@ export async function getBalance(): Promise<Wallet> {
 }
 
 /** POST /api/wallet/topup */
-export async function topUp(data: TopUpRequest): Promise<Transaction> {
+export async function topUp(
+  data: TopUpRequest,
+  idempotencyKey?: string
+): Promise<Transaction> {
   const { data: res } = await client.post<Transaction>(
     "/api/wallet/topup",
-    data
+    data,
+    idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined
   );
   return res;
 }

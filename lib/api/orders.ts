@@ -8,6 +8,12 @@ import type {
 } from "@/types/api";
 import type { OrderStatus } from "@/constants/enums";
 
+/** GET /api/orders/:orderId */
+export async function getById(orderId: string): Promise<Order> {
+  const { data } = await client.get<Order>(`/api/orders/${orderId}`);
+  return data;
+}
+
 /** GET /api/orders/buyer */
 export async function getByBuyer(
   page = 0,

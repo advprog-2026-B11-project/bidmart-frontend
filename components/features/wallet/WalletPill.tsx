@@ -1,19 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet } from "lucide-react";
+import { useCountingAnimation } from "@/hooks/useCountingAnimation";
 import { formatRupiahCompact } from "@/lib/utils";
+import { NotificationType } from "@/constants/enums";
 import * as walletApi from "@/lib/api/wallet";
-import type { Wallet as WalletData } from "@/types/api";
+import type { Wallet as WalletData, Notification } from "@/types/api";
+
+const POLL_INTERVAL_MS = 10_000;
+
+const BALANCE_NOTIFICATION_TYPES: string[] = [
+  NotificationType.PAYMENT_SUCCESS,
+  NotificationType.AUCTION_WON,
+];
 
 export function WalletPill() {
   const router = useRouter();
   const [wallet, setWallet] = useState<WalletData | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
+  const animatedBalance = useCountingAnimation(wallet?.balance ?? null);
+
+  const fetchBalance = useCallback(() => {
     walletApi.getBalance().then(setWallet).catch(() => {});
   }, []);
+
+  /* Initial fetch + 10s polling */
+  useEffect(() => {
+    fetchBalance();
+    pollTimerRef.current = setInterval(fetchBalance, POLL_INTERVAL_MS);
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [fetchBalance]);
+
+  /* WebSocket notification listener */
+  useEffect(() => {
+    function onWsNotification(e: Event) {
+      const notification = (e as CustomEvent<Notification>).detail;
+      const relevant =
+        BALANCE_NOTIFICATION_TYPES.includes(notification.type) ||
+        (notification.type as string).startsWith("BALANCE_");
+      if (relevant) fetchBalance();
+    }
+
+    window.addEventListener("ws-notification", onWsNotification);
+    return () => window.removeEventListener("ws-notification", onWsNotification);
+  }, [fetchBalance]);
 
   return (
     <div className="group relative">
@@ -23,7 +58,7 @@ export function WalletPill() {
       >
         <Wallet className="h-3.5 w-3.5 shrink-0" />
         <span className="tabular-nums">
-          {wallet ? formatRupiahCompact(wallet.balance) : "—"}
+          {animatedBalance !== null ? formatRupiahCompact(animatedBalance) : "—"}
         </span>
       </button>
 
