@@ -179,7 +179,7 @@ function CreateListingContent() {
   const handlePublish = useCallback(async () => {
     setSubmitting(true);
     try {
-      const listing = await listingsApi.create(buildPayload());
+      await listingsApi.create(buildPayload());
       toast.success("Listing berhasil dipublikasikan!", {
         description: "Lelang Anda kini aktif di BidMart.",
       });

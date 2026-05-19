@@ -18,7 +18,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { cn, formatRelativeTime, getInitials } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 import * as usersApi from "@/lib/api/users";
 import * as sessionsApi from "@/lib/api/sessions";

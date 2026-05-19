@@ -13,7 +13,6 @@ import {
   Package,
   Settings,
   Trophy,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/providers/AuthGuard";

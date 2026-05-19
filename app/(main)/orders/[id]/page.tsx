@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -314,7 +314,6 @@ function DetailSkeleton() {
 
 function OrderDetailContent() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
 
   const [order,     setOrder]     = useState<Order | null>(null);

@@ -3,11 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Edit,
   Eye,
-  Gavel,
   MoreVertical,
   Package,
   Plus,
@@ -263,7 +261,6 @@ function ListingRow({ listing, onDelete }: ListingRowProps) {
 
 function MyListingsContent() {
   const { user } = useAuth();
-  const router = useRouter();
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading,  setLoading]  = useState(true);
