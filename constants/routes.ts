@@ -15,7 +15,9 @@ export const ROUTES = {
   CREATE_LISTING: "/seller/listings/new",
   EDIT_LISTING: (id: string) => `/seller/listings/${id}/edit`,
   ORDERS: "/orders",
+  ORDER_DETAIL: (id: string) => `/orders/${id}`,
   NOTIFICATIONS: "/notifications",
+  NOTIFICATION_PREFERENCES: "/notifications/preferences",
   PROFILE: "/profile",
   SETTINGS: "/settings",
 } as const;

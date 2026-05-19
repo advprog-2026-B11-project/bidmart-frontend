@@ -28,6 +28,29 @@ export function useWebSocketContext(): WebSocketContextValue {
   return ctx;
 }
 
+/* ─── Per-type toast helper ───────────────────────────────────────────────── */
+
+function dispatchNotifToast(n: Notification) {
+  const opts = { description: n.body, duration: 5_000 };
+  switch (n.type) {
+    case NotificationType.AUCTION_WON:
+      toast.success(n.title, opts);
+      break;
+    case NotificationType.PAYMENT_SUCCESS:
+      toast.success(n.title, opts);
+      break;
+    case NotificationType.ORDER_UPDATE:
+      toast.info(n.title, opts);
+      break;
+    case NotificationType.AUCTION_ENDED:
+    case NotificationType.BID_PLACED:
+    case NotificationType.SYSTEM:
+    default:
+      toast(n.title, opts);
+      break;
+  }
+}
+
 /* ─── Provider ────────────────────────────────────────────────────────────── */
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
@@ -44,23 +67,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       try {
         const notification = JSON.parse(body) as Notification;
 
-        /* Broadcast a custom event so detail pages can react */
+        /* Broadcast for detail pages and notification center */
         window.dispatchEvent(
           new CustomEvent("ws-notification", { detail: notification })
         );
 
-        /* OUTBID gets a prominent custom toast */
+        /* OUTBID → prominent custom toast */
         if (notification.type === NotificationType.BID_OUTBID) {
           const listingId = notification.referenceId ?? "";
           showOutbidToast(listingId, notification.title);
           return;
         }
 
-        /* All other notifications → standard Sonner toast */
-        toast(notification.title, {
-          description: notification.body,
-          duration: 5_000,
-        });
+        /* All other types → styled Sonner toast */
+        dispatchNotifToast(notification);
       } catch {}
     });
 
