@@ -88,7 +88,7 @@ function RegisterForm() {
 
   async function onSubmit(data: RegisterForm) {
     try {
-      await registerUser(data.displayName, data.email, data.password);
+      await registerUser(data.username, data.email, data.displayName, data.password);
       toast.success("Akun berhasil dibuat! Silakan login.");
       router.push(ROUTES.AUTH.LOGIN);
     } catch (err) {

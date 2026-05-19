@@ -21,7 +21,7 @@ export async function login(
   password: string
 ): Promise<LoginResponse> {
   const { data: res } = await client.post<LoginResponse>("/api/auth/login", {
-    email: identifier,
+    identifier,
     password,
   });
   return res;

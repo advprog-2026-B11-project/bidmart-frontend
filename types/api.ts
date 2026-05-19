@@ -3,13 +3,14 @@ import type { AuctionStatus, OrderStatus, TransactionType, NotificationType, Pay
 /* ─── Auth ───────────────────────────────────────────────────────────────── */
 
 export interface LoginRequest {
-  email: string;
+  identifier: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  name: string;
+  username: string;
   email: string;
+  displayName: string;
   password: string;
   role?: UserRole;
 }

@@ -33,7 +33,7 @@ interface AuthContextValue {
   login: (identifier: string, password: string) => Promise<LoginResult>;
   verifyMfa: (tempToken: string, code: string) => Promise<void>;
   logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, displayName: string, password: string) => Promise<void>;
   refetchUser: () => Promise<void>;
 }
 
@@ -110,8 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const register = useCallback(
-    async (name: string, email: string, password: string): Promise<void> => {
-      await authApi.register({ name, email, password });
+    async (username: string, email: string, displayName: string, password: string): Promise<void> => {
+      await authApi.register({ username, email, displayName, password });
     },
     []
   );
