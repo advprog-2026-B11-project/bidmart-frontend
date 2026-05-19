@@ -8,6 +8,8 @@ export const ROUTES = {
     MFA: "/auth/verify-mfa",
   },
   WALLET: "/wallet",
+  WALLET_TOP_UP: "/wallet/top-up",
+  WALLET_WITHDRAW: "/wallet/withdraw",
   MY_BIDS: "/my-bids",
   MY_LISTINGS: "/seller/listings",
   CREATE_LISTING: "/seller/listings/new",

@@ -73,6 +73,8 @@ export interface Transaction {
 export interface TopUpRequest {
   amount: number;
   paymentMethod: PaymentMethod;
+  bankName?: string;
+  accountNumber?: string;
 }
 
 /* ─── Category ───────────────────────────────────────────────────────────── */
