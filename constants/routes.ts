@@ -13,6 +13,7 @@ export const ROUTES = {
   MY_BIDS: "/my-bids",
   MY_LISTINGS: "/seller/listings",
   CREATE_LISTING: "/seller/listings/new",
+  EDIT_LISTING: (id: string) => `/seller/listings/${id}/edit`,
   ORDERS: "/orders",
   NOTIFICATIONS: "/notifications",
   PROFILE: "/profile",
