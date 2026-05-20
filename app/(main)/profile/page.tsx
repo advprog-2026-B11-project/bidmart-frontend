@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Check,
+  Mail,
   Monitor,
   Pencil,
   Shield,
@@ -26,12 +27,13 @@ import type { DeviceSession, MfaSetupResponse, MfaStatusResponse } from "@/types
 
 /* ─── Device icon ─────────────────────────────────────────────────────────── */
 
-function DeviceIcon({ info }: { info: string }) {
+function DeviceIcon({ info, className }: { info: string; className?: string }) {
   const lower = info.toLowerCase();
+  const cls = className ?? "h-4 w-4 text-slate-400";
   if (lower.includes("mobile") || lower.includes("android") || lower.includes("iphone")) {
-    return <Smartphone className="h-4 w-4 text-slate-400" />;
+    return <Smartphone className={cls} />;
   }
-  return <Monitor className="h-4 w-4 text-slate-400" />;
+  return <Monitor className={cls} />;
 }
 
 /* ─── Inline edit field ───────────────────────────────────────────────────── */
@@ -678,139 +680,201 @@ function ProfileContent() {
           </div>
         </div>
 
-        <div className="px-6 py-4 space-y-6">
-          {/* MFA */}
-          <div className="space-y-4">
+        <div className="divide-y divide-slate-50">
+          {/* 2FA Sub-section */}
+          <div className="px-6 py-5 space-y-4">
+            {/* Status Header */}
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-slate-900">Autentikasi Dua Faktor (2FA)</p>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  {mfaStatus?.enabled
-                    ? `2FA aktif via ${mfaStatus.method === "EMAIL" ? "Email" : "Authenticator"}.`
-                    : "Aktifkan untuk lapisan keamanan tambahan."}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+                  mfaStatus?.enabled ? "bg-emerald-100" : "bg-slate-100"
+                )}>
+                  <Shield className={cn(
+                    "h-5 w-5 transition-colors",
+                    mfaStatus?.enabled ? "text-emerald-600" : "text-slate-400"
+                  )} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Autentikasi Dua Faktor (2FA)</p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {mfaLoading
+                      ? "Memuat status…"
+                      : mfaStatus?.enabled
+                        ? `Aktif via ${mfaStatus.method === "EMAIL" ? "Email" : "Authenticator App"}`
+                        : "Belum aktif — akun lebih rentan tanpa 2FA"}
+                  </p>
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge variant={mfaStatus?.enabled ? "success" : "default"}>
                   {mfaStatus?.enabled ? "Aktif" : "Nonaktif"}
                 </Badge>
                 {mfaStatus?.enabled && (
-                  <Badge 
-                    variant="info" 
-                    className="border border-blue-200 bg-blue-50 text-blue-700 font-semibold"
-                  >
+                  <Badge variant="info">
                     {mfaStatus.method === "TOTP" ? "Authenticator" : "Email"}
                   </Badge>
                 )}
               </div>
             </div>
 
+            {/* MFA Controls */}
             {mfaLoading ? (
-              <Skeleton className="h-20 w-full rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-8 w-48 rounded-xl" />
+              </div>
             ) : mfaStatus?.enabled ? (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold text-slate-500">Matikan atau ganti metode</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Masukkan password atau kode TOTP untuk menonaktifkan/mengganti MFA.
-                  </p>
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                    <input
-                      type="password"
-                      value={mfaPassword}
-                      onChange={(e) => setMfaPassword(e.target.value)}
-                      placeholder="Password"
-                      // Ditambahkan text-slate-900 agar warna teks gelap
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900" 
-                    />
-                    <input
-                      value={mfaTotpCode}
-                      onChange={(e) => setMfaTotpCode(e.target.value)}
-                      placeholder="Kode TOTP"
-                      // Ditambahkan text-slate-900 agar warna teks gelap
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                    />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      onClick={handleDisableMfa}
-                      disabled={mfaBusy}
-                      className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
-                      type="button"
-                    >
-                      Matikan MFA
-                    </button>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                  <p className="text-xs font-semibold text-amber-700">Matikan atau ganti metode</p>
+                </div>
+                <p className="text-xs text-amber-600">
+                  Masukkan password atau kode TOTP dari authenticator app untuk melanjutkan.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="password"
+                    value={mfaPassword}
+                    onChange={(e) => setMfaPassword(e.target.value)}
+                    placeholder="Password"
+                    className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                  />
+                  <input
+                    value={mfaTotpCode}
+                    onChange={(e) => setMfaTotpCode(e.target.value)}
+                    placeholder="Atau kode TOTP (6 digit)"
+                    inputMode="numeric"
+                    className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleDisableMfa}
+                    disabled={mfaBusy || (!mfaPassword.trim() && !mfaTotpCode.trim())}
+                    type="button"
+                    className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {mfaBusy ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-300 border-t-red-500" />
+                        Memproses…
+                      </span>
+                    ) : "Matikan 2FA"}
+                  </button>
+                  {mfaStatus.method !== "TOTP" && (
                     <button
                       onClick={() => handleSwitchMfa("totp")}
-                      disabled={mfaBusy}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                      disabled={mfaBusy || (!mfaPassword.trim() && !mfaTotpCode.trim())}
                       type="button"
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Ganti ke Authenticator
                     </button>
+                  )}
+                  {mfaStatus.method !== "EMAIL" && (
                     <button
                       onClick={() => handleSwitchMfa("email")}
-                      disabled={mfaBusy}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                      disabled={mfaBusy || (!mfaPassword.trim() && !mfaTotpCode.trim())}
                       type="button"
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Ganti ke Email
                     </button>
-                  </div>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Sembunyikan tombol pilihan jika salah satu setup sedang aktif */}
+              <div className="space-y-3">
                 {!mfaAction && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <button
                       onClick={handleStartTotp}
                       disabled={mfaBusy}
-                      className="rounded-lg border border-blue-200 bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-200 disabled:opacity-60"
                       type="button"
+                      className="group flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left transition-all hover:border-blue-300 hover:bg-blue-50/50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Aktifkan Authenticator
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 transition-colors group-hover:bg-blue-200">
+                        <Smartphone className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">Authenticator App</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">Google Authenticator, Authy, dll.</p>
+                        <span className="mt-1.5 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                          Direkomendasikan
+                        </span>
+                      </div>
                     </button>
                     <button
                       onClick={handleStartEmail}
                       disabled={mfaBusy}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
                       type="button"
+                      className="group flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left transition-all hover:border-slate-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Aktifkan via Email
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 transition-colors group-hover:bg-slate-300">
+                        <Mail className="h-4 w-4 text-slate-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">Email</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">Kode dikirim ke email Anda</p>
+                      </div>
                     </button>
                   </div>
                 )}
 
                 {mfaAction === "totp" && (
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold text-slate-700">Scan QR Authenticator</p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      Scan QR di Google Authenticator/Authenticator app, lalu masukkan kode.
+                  <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">1</div>
+                        <p className="text-sm font-semibold text-slate-800">Atur Authenticator App</p>
+                      </div>
+                      <button
+                        onClick={() => { setMfaAction(null); setMfaSetup(null); setMfaCode(""); }}
+                        disabled={mfaBusy}
+                        type="button"
+                        className="text-slate-400 transition-colors hover:text-slate-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 pl-8">
+                      Buka Google Authenticator atau Authy, pilih &ldquo;Tambah akun&rdquo;, lalu scan QR di bawah.
                     </p>
-                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-                      {mfaSetup ? (
-                        <img
-                          src={mfaSetup.qrCodeImageUri}
-                          alt="QR MFA"
-                          className="h-28 w-28 rounded-lg border border-slate-200 bg-white"
-                        />
-                      ) : (
-                        <div className="flex h-28 w-28 items-center justify-center rounded-lg border border-dashed border-slate-200 text-[11px] text-slate-400">
-                          Menyiapkan QR…
-                        </div>
-                      )}
-                      <div className="flex-1 space-y-2">
-                        {mfaSetup && (
-                          <p className="text-[11px] text-slate-500">
-                            Secret: <span className="font-mono text-slate-700">{mfaSetup.secret}</span>
-                          </p>
+                    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+                      <div className="shrink-0">
+                        {mfaSetup ? (
+                          <div className="overflow-hidden rounded-xl border-2 border-blue-200 bg-white p-2 shadow-sm">
+                            <img
+                              src={mfaSetup.qrCodeImageUri}
+                              alt="QR MFA"
+                              className="h-32 w-32 rounded-lg"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-36 w-36 items-center justify-center rounded-xl border-2 border-dashed border-blue-200 bg-white">
+                            <div className="flex flex-col items-center gap-2">
+                              <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-100 border-t-blue-500" />
+                              <span className="text-[11px] text-slate-400">Menyiapkan…</span>
+                            </div>
+                          </div>
                         )}
+                      </div>
+                      <div className="flex-1 w-full space-y-3">
+                        {mfaSetup && (
+                          <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Secret Key</p>
+                            <p className="select-all break-all font-mono text-xs text-slate-700">{mfaSetup.secret}</p>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">2</div>
+                          <p className="text-xs font-semibold text-slate-700">Masukkan kode 6 digit dari app</p>
+                        </div>
                         <input
                           value={mfaCode}
                           onChange={(e) => {
-                            // Format kode 123 - 456
                             let val = e.target.value.replace(/\D/g, "");
                             if (val.length > 6) val = val.slice(0, 6);
                             if (val.length > 3) {
@@ -819,25 +883,21 @@ function ProfileContent() {
                             setMfaCode(val);
                           }}
                           placeholder="123 - 456"
-                          // Menambahkan text-slate-900 agar warna teks terlihat
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                          className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2.5 text-center text-lg font-mono tracking-widest text-slate-900 placeholder:text-slate-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
                           inputMode="numeric"
                         />
                         <button
                           onClick={handleConfirmTotp}
                           disabled={mfaBusy}
-                          className="rounded-lg border border-blue-200 bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-200 disabled:opacity-60"
                           type="button"
+                          className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
                         >
-                          Konfirmasi Authenticator
-                        </button>
-                        <button
-                          onClick={() => { setMfaAction(null); setMfaSetup(null); setMfaCode(""); }}
-                          disabled={mfaBusy}
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-                          type="button"
-                        >
-                          Batal
+                          {mfaBusy ? (
+                            <span className="inline-flex items-center justify-center gap-2">
+                              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                              Memverifikasi…
+                            </span>
+                          ) : "Aktifkan 2FA"}
                         </button>
                       </div>
                     </div>
@@ -845,34 +905,45 @@ function ProfileContent() {
                 )}
 
                 {mfaAction === "email" && (
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold text-slate-700">Verifikasi Email</p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      Kami mengirim kode ke email Anda. Masukkan kode untuk mengaktifkan MFA.
-                    </p>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">
+                          <Mail className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">Verifikasi Email</p>
+                          <p className="text-xs text-slate-500">Kode telah dikirim ke email Anda.</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => { setMfaAction(null); setMfaEmailCode(""); }}
+                        disabled={mfaBusy}
+                        type="button"
+                        className="text-slate-400 transition-colors hover:text-slate-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <input
                         value={mfaEmailCode}
                         onChange={(e) => setMfaEmailCode(e.target.value)}
-                        placeholder="Masukkan kode email"
-                        // Menambahkan text-slate-900 agar warna teks gelap
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                        placeholder="Masukkan kode dari email"
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
                       />
                       <button
                         onClick={handleConfirmEmail}
                         disabled={mfaBusy}
-                        className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
                         type="button"
+                        className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
                       >
-                        Konfirmasi Email
-                      </button>
-                      <button
-                        onClick={() => { setMfaAction(null); setMfaEmailCode(""); }}
-                        disabled={mfaBusy}
-                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-                        type="button"
-                      >
-                        Batal
+                        {mfaBusy ? (
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                            Memverifikasi…
+                          </span>
+                        ) : "Konfirmasi"}
                       </button>
                     </div>
                   </div>
@@ -881,37 +952,60 @@ function ProfileContent() {
             )}
           </div>
 
-          {/* Sessions */}
-          <div>
-            <p className="mb-3 text-sm font-medium text-slate-900">Sesi Aktif</p>
+          {/* Sessions Sub-section */}
+          <div className="px-6 py-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Perangkat Aktif</p>
+                {!sessLoading && (
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {sessions.filter((s) => !s.current).length > 0
+                      ? `${sessions.filter((s) => !s.current).length} perangkat lain masuk`
+                      : "Hanya perangkat ini yang aktif"}
+                  </p>
+                )}
+              </div>
+            </div>
             {sessLoading ? (
               <div className="space-y-2">
-                {[...Array(2)].map((_, i) => (
-                  <Skeleton key={i} className="h-14 w-full rounded-xl" />
-                ))}
+                {[0, 1].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
               </div>
             ) : sessions.length === 0 ? (
-              <p className="text-xs text-slate-400">Tidak ada sesi aktif lain.</p>
+              <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                <Monitor className="h-5 w-5 text-slate-300" />
+                <p className="text-sm text-slate-400">Tidak ada sesi aktif lain.</p>
+              </div>
             ) : (
               <div className="space-y-2">
                 {sessions.map((sess) => (
                   <div
                     key={sess.id}
                     className={cn(
-                      "flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 transition-all duration-300",
+                      "flex items-center justify-between gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300",
+                      sess.current
+                        ? "border-blue-200 bg-blue-50/40"
+                        : "border-slate-100 bg-white hover:border-slate-200",
                       removingIds.has(sess.id) && "scale-95 opacity-0"
                     )}
                   >
-                    <div className="flex items-start gap-2.5">
-                      <DeviceIcon info={sess.deviceInfo} />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs font-medium text-slate-800">{sess.deviceInfo}</p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                        sess.current ? "bg-blue-100" : "bg-slate-100"
+                      )}>
+                        <DeviceIcon
+                          info={sess.deviceInfo}
+                          className={cn("h-4 w-4", sess.current ? "text-blue-600" : "text-slate-500")}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="truncate text-xs font-semibold text-slate-800">{sess.deviceInfo}</p>
                           {sess.current && (
-                            <Badge variant="info" className="text-[10px] py-0 px-1.5">Sesi ini</Badge>
+                            <Badge variant="info" className="shrink-0 px-1.5 py-0 text-[10px]">Sesi ini</Badge>
                           )}
                         </div>
-                        <p className="mt-0.5 text-[10px] text-slate-400">
+                        <p className="mt-0.5 text-[11px] text-slate-400">
                           IP: {sess.ipAddress} · Aktif {formatRelativeTime(sess.lastActiveAt)}
                         </p>
                       </div>
@@ -920,10 +1014,11 @@ function ProfileContent() {
                       <button
                         onClick={() => handleRevokeSession(sess.id)}
                         disabled={revokingId === sess.id}
-                        className="flex shrink-0 items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50"
+                        type="button"
+                        className="flex shrink-0 items-center gap-1.5 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-medium text-red-500 transition-colors hover:border-red-200 hover:bg-red-50 disabled:opacity-50"
                       >
                         {revokingId === sess.id ? (
-                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-300 border-t-red-500" />
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
                         ) : (
                           <Trash2 className="h-3 w-3" />
                         )}
