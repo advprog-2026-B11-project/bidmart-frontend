@@ -21,7 +21,7 @@ import { Logo } from "./Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { NotificationBell } from "@/components/features/notifications/NotificationBell";
+import NotificationBell from "@/components/features/notifications/NotificationBell";
 import { WalletPill } from "@/components/features/wallet/WalletPill";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/constants/enums";
