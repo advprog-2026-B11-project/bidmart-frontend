@@ -512,13 +512,16 @@ function ProfileContent() {
   }, []);
 
   const handleConfirmTotp = useCallback(async () => {
-    if (!mfaCode.trim()) {
-      toast.error("Masukkan kode MFA terlebih dulu.");
+    // Bersihkan karakter non-digit sebelum validasi & dikirim
+    const cleanCode = mfaCode.replace(/\D/g, "");
+    
+    if (!cleanCode.trim() || cleanCode.length < 6) {
+      toast.error("Masukkan 6 digit kode MFA terlebih dulu.");
       return;
     }
     setMfaBusy(true);
     try {
-      await usersApi.enableMfa(mfaCode.trim());
+      await usersApi.enableMfa(cleanCode);
       setMfaAction(null);
       setMfaCode("");
       setMfaSetup(null);
@@ -692,7 +695,12 @@ function ProfileContent() {
                   {mfaStatus?.enabled ? "Aktif" : "Nonaktif"}
                 </Badge>
                 {mfaStatus?.enabled && (
-                  <Badge variant="info">{mfaStatus.method}</Badge>
+                  <Badge 
+                    variant="info" 
+                    className="border border-blue-200 bg-blue-50 text-blue-700 font-semibold"
+                  >
+                    {mfaStatus.method === "TOTP" ? "Authenticator" : "Email"}
+                  </Badge>
                 )}
               </div>
             </div>
@@ -712,13 +720,15 @@ function ProfileContent() {
                       value={mfaPassword}
                       onChange={(e) => setMfaPassword(e.target.value)}
                       placeholder="Password"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      // Ditambahkan text-slate-900 agar warna teks gelap
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900" 
                     />
                     <input
                       value={mfaTotpCode}
                       onChange={(e) => setMfaTotpCode(e.target.value)}
                       placeholder="Kode TOTP"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      // Ditambahkan text-slate-900 agar warna teks gelap
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                     />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -751,24 +761,27 @@ function ProfileContent() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={handleStartTotp}
-                    disabled={mfaBusy}
-                    className="rounded-lg border border-blue-200 bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-200 disabled:opacity-60"
-                    type="button"
-                  >
-                    Aktifkan Authenticator
-                  </button>
-                  <button
-                    onClick={handleStartEmail}
-                    disabled={mfaBusy}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-                    type="button"
-                  >
-                    Aktifkan via Email
-                  </button>
-                </div>
+                {/* Sembunyikan tombol pilihan jika salah satu setup sedang aktif */}
+                {!mfaAction && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleStartTotp}
+                      disabled={mfaBusy}
+                      className="rounded-lg border border-blue-200 bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-200 disabled:opacity-60"
+                      type="button"
+                    >
+                      Aktifkan Authenticator
+                    </button>
+                    <button
+                      onClick={handleStartEmail}
+                      disabled={mfaBusy}
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                      type="button"
+                    >
+                      Aktifkan via Email
+                    </button>
+                  </div>
+                )}
 
                 {mfaAction === "totp" && (
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -796,9 +809,18 @@ function ProfileContent() {
                         )}
                         <input
                           value={mfaCode}
-                          onChange={(e) => setMfaCode(e.target.value)}
-                          placeholder="Masukkan kode 6 digit"
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                          onChange={(e) => {
+                            // Format kode 123 - 456
+                            let val = e.target.value.replace(/\D/g, "");
+                            if (val.length > 6) val = val.slice(0, 6);
+                            if (val.length > 3) {
+                              val = `${val.slice(0, 3)} - ${val.slice(3)}`;
+                            }
+                            setMfaCode(val);
+                          }}
+                          placeholder="123 - 456"
+                          // Menambahkan text-slate-900 agar warna teks terlihat
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                           inputMode="numeric"
                         />
                         <button
@@ -833,7 +855,8 @@ function ProfileContent() {
                         value={mfaEmailCode}
                         onChange={(e) => setMfaEmailCode(e.target.value)}
                         placeholder="Masukkan kode email"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        // Menambahkan text-slate-900 agar warna teks gelap
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                       />
                       <button
                         onClick={handleConfirmEmail}
