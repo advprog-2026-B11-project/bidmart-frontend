@@ -24,7 +24,7 @@ export class ApiError extends Error {
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "https://bidmart-backend-wn6p.onrender.com";
+  "http://localhost:8080";
 
 const client = axios.create({
   baseURL: BASE_URL,
