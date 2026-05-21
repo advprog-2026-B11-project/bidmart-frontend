@@ -20,4 +20,8 @@ export const ROUTES = {
   NOTIFICATION_PREFERENCES: "/notifications/preferences",
   PROFILE: "/profile",
   SETTINGS: "/settings",
+  ADMIN: {
+    USERS: "/admin/users",
+    ROLES: "/admin/roles",
+  },
 } as const;

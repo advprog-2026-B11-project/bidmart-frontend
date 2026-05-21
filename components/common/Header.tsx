@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   Hammer,
+  LayoutDashboard,
   ListOrdered,
   LogOut,
   Menu,
@@ -150,6 +151,7 @@ export function Header() {
   };
 
   const isSeller = user?.role === UserRole.SELLER || user?.role === UserRole.ADMIN;
+  const isAdmin  = user?.role === UserRole.ADMIN;
 
   return (
     <>
@@ -287,6 +289,9 @@ export function Header() {
                         )}
                         <DropdownItem href={ROUTES.WALLET}      icon={<WalletIcon  className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Wallet</DropdownItem>
                         <DropdownItem href={ROUTES.SETTINGS}    icon={<Settings    className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Pengaturan</DropdownItem>
+                        {isAdmin && (
+                          <DropdownItem href={ROUTES.ADMIN.USERS} icon={<LayoutDashboard className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Admin Panel</DropdownItem>
+                        )}
                       </div>
 
                       <div className="border-t border-slate-100 py-1">
@@ -399,6 +404,7 @@ export function Header() {
                     {isSeller && <DrawerLink href={ROUTES.MY_LISTINGS} onNavigate={closeDrawer}>Listing Saya</DrawerLink>}
                     <DrawerLink href={ROUTES.WALLET}       onNavigate={closeDrawer}>Wallet</DrawerLink>
                     <DrawerLink href={ROUTES.SETTINGS}     onNavigate={closeDrawer}>Pengaturan</DrawerLink>
+                    {isAdmin  && <DrawerLink href={ROUTES.ADMIN.USERS} onNavigate={closeDrawer}>Admin Panel</DrawerLink>}
                   </nav>
 
                   <div className="mt-4 border-t border-slate-100 pt-4">
