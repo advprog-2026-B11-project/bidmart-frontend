@@ -1,5 +1,5 @@
 import client from "./client";
-import type { Bid, PlaceBidRequest, MinimumBidResponse, PaginatedResponse } from "@/types/api";
+import type { Bid, PlaceBidRequest, MinimumBidResponse } from "@/types/api";
 
 /** POST /api/bids — place a bid; idempotencyKey prevents duplicate submissions */
 export async function place(

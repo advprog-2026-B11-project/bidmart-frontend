@@ -17,17 +17,13 @@ interface BidHistoryProps {
 
 export function BidHistory({ listingId }: BidHistoryProps) {
   const [bids, setBids]           = useState<Bid[]>([]);
-  const [page, setPage]           = useState(0);
   const [loading, setLoading]     = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore]     = useState(false);
 
   const doFetch = useCallback((): Promise<void> => {
     return bidsApi
       .getByListing(listingId)
       .then((res) => {
         setBids(res ?? []);
-        setHasMore(false);
       });
   }, [listingId]);
 
