@@ -167,15 +167,12 @@ function MyBidsContent() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const [tab,     setTab]     = useState<FilterTab>("semua");
-  const [page,    setPage]    = useState(0);
-  const [hasMore, setHasMore] = useState(false);
 
   const doFetch = useCallback((): Promise<void> => {
     return bidsApi
       .getMyBids()
       .then((res) => {
         setBids(res ?? []);
-        setHasMore(false);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
