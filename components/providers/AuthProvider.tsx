@@ -19,6 +19,7 @@ import {
   clearUser,
 } from "@/lib/api/storage";
 import type { UserProfile, AuthResponse, MfaRequiredResponse } from "@/types/api";
+import { UserRole } from "@/constants/enums";
 
 interface LoginResult {
   mfaRequired: boolean;
@@ -49,6 +50,27 @@ function isMfaRequired(r: AuthResponse | MfaRequiredResponse): r is MfaRequiredR
   return "mfaRequired" in r && r.mfaRequired === true;
 }
 
+function rawToProfile(raw: Record<string, unknown>): UserProfile {
+  const roleStr = String(raw.role ?? "BUYER").toUpperCase();
+  const role =
+    roleStr === "SELLER" ? UserRole.SELLER :
+    roleStr === "ADMIN"  ? UserRole.ADMIN  :
+                           UserRole.BUYER;
+  const now = new Date().toISOString();
+  return {
+    id:              String(raw.id ?? ""),
+    name:            String(raw.displayName ?? raw.name ?? raw.username ?? ""),
+    email:           String(raw.email ?? ""),
+    avatarUrl:       (raw.imageUrl ?? raw.avatarUrl ?? null) as string | null,
+    role,
+    phoneNumber:     (raw.phoneNumber ?? null) as string | null,
+    shippingAddress: (raw.shippingAddress ?? null) as string | null,
+    mfaEnabled:      Boolean(raw.mfaEnabled ?? raw.isMfaEnabled ?? false),
+    createdAt:       String(raw.createdAt ?? now),
+    updatedAt:       String(raw.updatedAt ?? now),
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUserState] = useState<UserProfile | null>(null);
@@ -72,8 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserState(profile);
         setUser(profile);
       } catch {
-        setUserState(null);
-        setAccessToken(null);
+        // stored user is already set above; only clear if there was nothing stored
+        if (!stored) {
+          setUserState(null);
+          setAccessToken(null);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -89,13 +114,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setTokens(result.accessToken, result.refreshToken);
       setAccessToken(result.accessToken);
+      const rawUser = result.user as unknown as Record<string, unknown> | undefined | null;
+      if (rawUser) {
+        const immediate = rawToProfile(rawUser);
+        setUserState(immediate);
+        setUser(immediate);
+      }
       try {
         const profile = await usersApi.getMyProfile();
         setUser(profile);
         setUserState(profile);
       } catch {
-        clearUser();
-        setUserState(null);
+        // keep the immediate profile from auth response if getMyProfile fails
       }
       return { mfaRequired: false };
     },
