@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -19,8 +19,6 @@ export default function NotificationsPage() {
         .then(setNotifications)
         .catch(console.error)
         .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
     }
   }, [user]);
 

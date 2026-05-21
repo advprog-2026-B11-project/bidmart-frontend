@@ -266,8 +266,8 @@ function WalletContent() {
 
       {/* Hero balance card */}
       <BalanceCard
-        balance={wallet?.balance ?? null}
-        holdBalance={wallet?.holdBalance}
+        balance={wallet?.balanceAvailable ?? null}
+        holdBalance={wallet?.balanceLocked}
         loading={!wallet}
         className="mb-4"
       />

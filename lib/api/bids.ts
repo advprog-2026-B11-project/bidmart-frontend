@@ -14,13 +14,10 @@ export async function place(
 
 /** GET /api/bids/listing/:listingId */
 export async function getByListing(
-  listingId: string,
-  page = 0,
-  size = 20
-): Promise<PaginatedResponse<Bid>> {
-  const { data } = await client.get<PaginatedResponse<Bid>>(
-    `/api/bids/listing/${listingId}`,
-    { params: { page, size } }
+  listingId: string
+): Promise<Bid[]> {
+  const { data } = await client.get<Bid[]>(
+    `/api/bids/listing/${listingId}`
   );
   return data;
 }
@@ -44,25 +41,17 @@ export async function getMinimumBid(
 }
 
 /** GET /api/bids/my */
-export async function getMyBids(
-  page = 0,
-  size = 20
-): Promise<PaginatedResponse<Bid>> {
-  const { data } = await client.get<PaginatedResponse<Bid>>("/api/bids/my", {
-    params: { page, size },
-  });
+export async function getMyBids(): Promise<Bid[]> {
+  const { data } = await client.get<Bid[]>("/api/bids/me");
   return data;
 }
 
 /** GET /api/bids/buyer/:buyerId */
 export async function getByBuyer(
-  buyerId: string,
-  page = 0,
-  size = 20
-): Promise<PaginatedResponse<Bid>> {
-  const { data } = await client.get<PaginatedResponse<Bid>>(
-    `/api/bids/buyer/${buyerId}`,
-    { params: { page, size } }
+  buyerId: string
+): Promise<Bid[]> {
+  const { data } = await client.get<Bid[]>(
+    `/api/bids/buyer/${buyerId}`
   );
   return data;
 }

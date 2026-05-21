@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 export default function OrdersPage() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -19,8 +19,6 @@ export default function OrdersPage() {
         .then(setOrders)
         .catch(console.error)
         .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
     }
   }, [user]);
 
@@ -71,7 +69,7 @@ export default function OrdersPage() {
                   <Badge variant={
                     order.status === 'DELIVERED' ? 'success' :
                     order.status === 'SHIPPED' ? 'info' :
-                    order.status === 'DISPUTED' ? 'destructive' : 'default'
+                    order.status === 'DISPUTED' ? 'danger' : 'default'
                   }>
                     {order.status}
                   </Badge>

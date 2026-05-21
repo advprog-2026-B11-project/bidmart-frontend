@@ -94,7 +94,7 @@ export default function OrderDetailPage() {
           <Badge variant={
             order.status === 'DELIVERED' ? 'success' :
             order.status === 'SHIPPED' ? 'info' :
-            order.status === 'DISPUTED' ? 'destructive' : 'default'
+            order.status === 'DISPUTED' ? 'danger' : 'default'
           }>
             {order.status}
           </Badge>
@@ -137,7 +137,7 @@ export default function OrderDetailPage() {
               <Button onClick={handleConfirmDelivery} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
                 Konfirmasi Barang Diterima
               </Button>
-              <Button onClick={() => setShowDisputeForm(!showDisputeForm)} variant="destructive">
+              <Button onClick={() => setShowDisputeForm(!showDisputeForm)} variant="danger">
                 Ajukan Komplain (Dispute)
               </Button>
             </div>
@@ -153,7 +153,7 @@ export default function OrderDetailPage() {
               />
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowDisputeForm(false)}>Batal</Button>
-                <Button variant="destructive" onClick={handleDisputeOrder}>Kirim Laporan</Button>
+                <Button variant="danger" onClick={handleDisputeOrder}>Kirim Laporan</Button>
               </div>
             </div>
           )}

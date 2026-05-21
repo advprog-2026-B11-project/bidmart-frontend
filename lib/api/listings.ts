@@ -5,12 +5,83 @@ import type {
   UpdateListingRequest,
   ListingSearchParams,
   PaginatedResponse,
+  Category,
 } from "@/types/api";
+
+type BackendListing = Omit<Partial<Listing>, "category"> & {
+  category?: Partial<Category>;
+  categoryId?: string;
+  sellerId?: string;
+  imageUrl?: string | null;
+  endTime?: string;
+  currentHighestBid?: number | null;
+};
+
+function fallbackCategory(categoryId = ""): Category {
+  return {
+    id: categoryId,
+    name: "Kategori",
+    slug: categoryId,
+    description: null,
+    imageUrl: null,
+  };
+}
+
+function normalizeListing(raw: BackendListing): Listing {
+  const imageUrls = raw.imageUrls ?? (raw.imageUrl ? [raw.imageUrl] : []);
+  const currentPrice = raw.currentPrice ?? raw.currentHighestBid ?? raw.startingPrice ?? 0;
+  const endAt = raw.endAt ?? raw.endTime ?? "";
+  const categoryId = raw.categoryId ?? raw.category?.id ?? "";
+
+  return {
+    ...raw,
+    id: raw.id ?? "",
+    sellerId: raw.sellerId ?? raw.seller?.id ?? "",
+    categoryId,
+    title: raw.title ?? "",
+    description: raw.description ?? "",
+    imageUrl: raw.imageUrl ?? imageUrls[0] ?? null,
+    imageUrls,
+    startingPrice: raw.startingPrice ?? 0,
+    currentPrice,
+    currentHighestBid: raw.currentHighestBid ?? null,
+    reservePrice: raw.reservePrice ?? null,
+    buyNowPrice: raw.buyNowPrice ?? null,
+    status: raw.status ?? "ACTIVE",
+    category: raw.category?.id ? (raw.category as Category) : fallbackCategory(categoryId),
+    seller: raw.seller,
+    totalBids: raw.totalBids ?? (raw.currentHighestBid ? 1 : 0),
+    currentHighestBidderId: raw.currentHighestBidderId,
+    startAt: raw.startAt ?? raw.createdAt ?? "",
+    endAt,
+    endTime: raw.endTime ?? endAt,
+    createdAt: raw.createdAt ?? "",
+    updatedAt: raw.updatedAt ?? raw.createdAt ?? "",
+  } as Listing;
+}
+
+function normalizePage(data: PaginatedResponse<BackendListing>): PaginatedResponse<Listing> {
+  return {
+    ...data,
+    content: (data.content ?? []).map(normalizeListing),
+  };
+}
+
+function toBackendPayload(data: CreateListingRequest | UpdateListingRequest) {
+  return {
+    ...data,
+    imageUrl: data.imageUrl ?? data.imageUrls?.[0],
+    endTime: data.endTime ?? data.endAt,
+    imageUrls: undefined,
+    startAt: undefined,
+    endAt: undefined,
+  };
+}
 
 /** POST /api/listings */
 export async function create(data: CreateListingRequest): Promise<Listing> {
-  const { data: res } = await client.post<Listing>("/api/listings", data);
-  return res;
+  const { data: res } = await client.post<BackendListing>("/api/listings", toBackendPayload(data));
+  return normalizeListing(res);
 }
 
 /** GET /api/listings */
@@ -18,11 +89,11 @@ export async function getAll(
   page = 0,
   size = 20
 ): Promise<PaginatedResponse<Listing>> {
-  const { data } = await client.get<PaginatedResponse<Listing>>(
+  const { data } = await client.get<PaginatedResponse<BackendListing>>(
     "/api/listings",
     { params: { page, size } }
   );
-  return data;
+  return normalizePage(data);
 }
 
 /** GET /api/listings/active */
@@ -30,28 +101,28 @@ export async function getActive(
   page = 0,
   size = 20
 ): Promise<PaginatedResponse<Listing>> {
-  const { data } = await client.get<PaginatedResponse<Listing>>(
+  const { data } = await client.get<PaginatedResponse<BackendListing>>(
     "/api/listings/active",
     { params: { page, size } }
   );
-  return data;
+  return normalizePage(data);
 }
 
 /** GET /api/listings/search?keyword=&category=&minPrice=&maxPrice= */
 export async function search(
   params: ListingSearchParams
 ): Promise<PaginatedResponse<Listing>> {
-  const { data } = await client.get<PaginatedResponse<Listing>>(
+  const { data } = await client.get<PaginatedResponse<BackendListing>>(
     "/api/listings/search",
     { params }
   );
-  return data;
+  return normalizePage(data);
 }
 
 /** GET /api/listings/:id */
 export async function getById(id: string): Promise<Listing> {
-  const { data } = await client.get<Listing>(`/api/listings/${id}`);
-  return data;
+  const { data } = await client.get<BackendListing>(`/api/listings/${id}`);
+  return normalizeListing(data);
 }
 
 /** PATCH /api/listings/:id */
@@ -59,11 +130,11 @@ export async function update(
   id: string,
   data: UpdateListingRequest
 ): Promise<Listing> {
-  const { data: res } = await client.patch<Listing>(
+  const { data: res } = await client.put<BackendListing>(
     `/api/listings/${id}`,
-    data
+    toBackendPayload(data)
   );
-  return res;
+  return normalizeListing(res);
 }
 
 /** DELETE /api/listings/:id */

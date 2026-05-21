@@ -14,8 +14,6 @@ export default function NotificationBell() {
       notificationApi.getUnreadNotifications(user.id)
         .then(data => setUnreadCount(data.length))
         .catch(console.error);
-    } else {
-      setUnreadCount(0);
     }
   }, [user]);
 
