@@ -14,6 +14,7 @@ import {
   Settings,
   User,
   Wallet as WalletIcon,
+  Bell,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ import { Logo } from "./Logo";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { NotificationBell } from "@/components/features/notifications/NotificationBell";
+import NotificationBell from "@/components/features/notifications/NotificationBell";
 import { WalletPill } from "@/components/features/wallet/WalletPill";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/constants/enums";
@@ -280,6 +281,7 @@ export function Header() {
 
                       <div className="py-1">
                         <DropdownItem href={ROUTES.PROFILE}     icon={<User        className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Profil Saya</DropdownItem>
+                        <DropdownItem href={ROUTES.NOTIFICATIONS} icon={<Bell      className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Notifikasi</DropdownItem>
                         <DropdownItem href={ROUTES.MY_BIDS}     icon={<Hammer      className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Bid Saya</DropdownItem>
                         <DropdownItem href={ROUTES.ORDERS}      icon={<Package     className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Pesanan</DropdownItem>
                         {isSeller && (
@@ -317,14 +319,17 @@ export function Header() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Buka menu"
-            className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          {/* Mobile actions (Bell + Hamburger) */}
+          <div className="ml-auto flex items-center gap-1 md:hidden">
+            {isAuthenticated && <NotificationBell />}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Buka menu"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -394,6 +399,7 @@ export function Header() {
 
                   <nav className="space-y-0.5">
                     <DrawerLink href={ROUTES.PROFILE}      onNavigate={closeDrawer}>Profil Saya</DrawerLink>
+                    <DrawerLink href={ROUTES.NOTIFICATIONS} onNavigate={closeDrawer}>Notifikasi</DrawerLink>
                     <DrawerLink href={ROUTES.MY_BIDS}      onNavigate={closeDrawer}>Bid Saya</DrawerLink>
                     <DrawerLink href={ROUTES.ORDERS}       onNavigate={closeDrawer}>Pesanan</DrawerLink>
                     {isSeller && <DrawerLink href={ROUTES.MY_LISTINGS} onNavigate={closeDrawer}>Listing Saya</DrawerLink>}

@@ -7,9 +7,9 @@ import type {
   PaginatedResponse,
 } from "@/types/api";
 
-/** GET /api/wallet */
+/** GET /api/wallet/balance */
 export async function getBalance(): Promise<Wallet> {
-  const { data } = await client.get<Wallet>("/api/wallet");
+  const { data } = await client.get<Wallet>("/api/wallet/balance");
   return data;
 }
 
@@ -18,9 +18,19 @@ export async function topUp(
   data: TopUpRequest,
   idempotencyKey?: string
 ): Promise<Transaction> {
+  const payload = {
+    amount: data.amount,
+    method: data.paymentMethod === "BANK_TRANSFER" ? "BANK" : data.paymentMethod,
+    paymentDetails: {
+      bankName: data.bankName,
+      accountNumber: data.accountNumber,
+    },
+    idempotencyKey: idempotencyKey,
+  };
+
   const { data: res } = await client.post<Transaction>(
     "/api/wallet/topup",
-    data,
+    payload,
     idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined
   );
   return res;
@@ -28,9 +38,18 @@ export async function topUp(
 
 /** POST /api/wallet/withdraw */
 export async function withdraw(data: WithdrawRequest): Promise<Transaction> {
+  const payload = {
+    amount: data.amount,
+    method: "BANK",
+    paymentDetails: {
+      bankName: data.bankName,
+      accountNumber: data.bankAccount,
+    },
+  };
+
   const { data: res } = await client.post<Transaction>(
     "/api/wallet/withdraw",
-    data
+    payload
   );
   return res;
 }

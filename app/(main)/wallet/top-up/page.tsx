@@ -222,7 +222,7 @@ function TopUpContent() {
                 placeholder="0"
                 min={1}
                 max={MAX_AMOUNT}
-                step={1000}
+                step="any"
                 required
                 className={cn(
                   "w-full rounded-lg border bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium tabular-nums",
@@ -356,8 +356,8 @@ function TopUpContent() {
         <div className="space-y-4">
           {wallet ? (
             <BalanceCard
-              balance={wallet.balance}
-              holdBalance={wallet.holdBalance}
+              balance={wallet.balanceAvailable}
+              holdBalance={wallet.balanceLocked}
             />
           ) : (
             <Skeleton className="h-32 rounded-2xl" />
@@ -397,7 +397,7 @@ function TopUpContent() {
                 </span>
                 <span className="font-bold tabular-nums text-blue-700">
                   {wallet && numAmount > 0
-                    ? formatRupiah(wallet.balance + numAmount)
+                    ? formatRupiah(wallet.balanceAvailable + numAmount)
                     : "—"}
                 </span>
               </div>

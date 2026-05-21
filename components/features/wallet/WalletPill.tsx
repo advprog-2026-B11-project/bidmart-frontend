@@ -21,7 +21,7 @@ export function WalletPill() {
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const animatedBalance = useCountingAnimation(wallet?.balance ?? null);
+  const animatedBalance = useCountingAnimation(wallet?.balanceAvailable ?? null);
 
   const fetchBalance = useCallback(() => {
     walletApi.getBalance().then(setWallet).catch(() => {});
@@ -62,9 +62,9 @@ export function WalletPill() {
         </span>
       </button>
 
-      {wallet && wallet.holdBalance > 0 && (
+      {wallet && wallet.balanceLocked > 0 && (
         <div className="pointer-events-none absolute -bottom-8 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-          Ditahan: {formatRupiahCompact(wallet.holdBalance)}
+          Ditahan: {formatRupiahCompact(wallet.balanceLocked)}
         </div>
       )}
     </div>
