@@ -6,6 +6,7 @@ export const ROUTES = {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
     MFA: "/auth/verify-mfa",
+    VERIFY: "/auth/verify",
   },
   WALLET: "/wallet",
   WALLET_TOP_UP: "/wallet/top-up",

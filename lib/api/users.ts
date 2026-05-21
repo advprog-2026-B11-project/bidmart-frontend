@@ -21,6 +21,8 @@ interface BackendUserProfile {
   role?: string;
   mfaEnabled?: boolean;
   isMfaEnabled?: boolean;
+  isEmailVerified?: boolean;
+  emailVerified?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -42,6 +44,7 @@ function mapUserProfile(data: BackendUserProfile): UserProfile {
     phoneNumber: data.phoneNumber ?? null,
     shippingAddress: data.shippingAddress ?? null,
     mfaEnabled: data.mfaEnabled ?? data.isMfaEnabled ?? false,
+    isEmailVerified: data.isEmailVerified ?? data.emailVerified ?? false,
     createdAt: data.createdAt ?? now,
     updatedAt: data.updatedAt ?? now,
   };

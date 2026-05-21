@@ -66,6 +66,7 @@ export interface UserProfile {
   phoneNumber?: string | null;
   shippingAddress?: string | null;
   mfaEnabled: boolean;
+  isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }
