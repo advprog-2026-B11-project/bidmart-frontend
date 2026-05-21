@@ -7,17 +7,44 @@ export interface LoginRequest {
   password: string;
 }
 
+export type RegisterRole = "USER" | "SELLER";
+
 export interface RegisterRequest {
   username: string;
   email: string;
   displayName: string;
   password: string;
-  role?: UserRole;
+  role?: RegisterRole;
 }
 
 export interface MfaVerifyRequest {
   email: string;
   code: string;
+}
+
+export interface MfaStatusResponse {
+  enabled: boolean;
+  method: "NONE" | "TOTP" | "EMAIL";
+}
+
+export interface MfaSetupResponse {
+  secret: string;
+  qrCodeImageUri: string;
+  method: "TOTP";
+  enabled: boolean;
+}
+
+export interface MfaEnableRequest {
+  code: string;
+}
+
+export interface MfaEmailVerifyRequest {
+  code: string;
+}
+
+export interface MfaDisableRequest {
+  password?: string;
+  totpCode?: string;
 }
 
 export interface AuthResponse {
@@ -36,6 +63,8 @@ export interface UserProfile {
   email: string;
   avatarUrl: string | null;
   role: UserRole;
+  phoneNumber?: string | null;
+  shippingAddress?: string | null;
   mfaEnabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -231,8 +260,10 @@ export interface VerifyEmailRequest {
 }
 
 export interface UpdateProfileRequest {
-  name?: string;
-  avatarUrl?: string;
+  displayName?: string;
+  phoneNumber?: string;
+  imageUrl?: string;
+  shippingAddress?: string;
 }
 
 /* ─── Sessions ───────────────────────────────────────────────────────────── */

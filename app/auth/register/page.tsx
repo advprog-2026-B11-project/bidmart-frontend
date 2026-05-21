@@ -12,6 +12,7 @@ import { AuthGuard } from "@/components/providers/AuthGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,9 @@ const registerSchema = z
       .string()
       .min(1, "Nama tampilan wajib diisi")
       .max(100, "Maksimal 100 karakter"),
+    role: z.enum(["USER", "SELLER"] as const, {
+      message: "Role wajib dipilih",
+    }),
     password: z.string().min(8, "Password minimal 8 karakter"),
     confirmPassword: z.string(),
   })
@@ -82,13 +86,16 @@ function RegisterForm() {
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { role: "USER" },
+  });
 
   const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
 
   async function onSubmit(data: RegisterForm) {
     try {
-      await registerUser(data.username, data.email, data.displayName, data.password);
+      await registerUser(data.username, data.email, data.displayName, data.password, data.role);
       toast.success("Akun berhasil dibuat! Silakan login.");
       router.push(ROUTES.AUTH.LOGIN);
     } catch (err) {
@@ -165,6 +172,34 @@ function RegisterForm() {
               <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.displayName.message}
+              </p>
+            )}
+          </div>
+
+          {/* role */}
+          <div className="space-y-1.5">
+            <Label htmlFor="role">Peran</Label>
+            <select
+              id="role"
+              aria-invalid={!!errors.role}
+              className={cn(
+                "w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900",
+                "placeholder:text-slate-400 dark:bg-slate-900 dark:text-slate-50",
+                "border-slate-300 dark:border-slate-700",
+                "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+                "transition-colors duration-150",
+                errors.role && "border-red-500 focus:ring-red-500 focus:border-red-500"
+              )}
+              {...register("role")}
+            >
+              <option value="USER">Pembeli</option>
+              <option value="SELLER">Penjual</option>
+            </select>
+            {errors.role && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                <AlertCircle size={12} aria-hidden="true" />
+                {errors.role.message}
               </p>
             )}
           </div>

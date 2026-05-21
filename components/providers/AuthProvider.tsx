@@ -33,7 +33,13 @@ interface AuthContextValue {
   login: (identifier: string, password: string) => Promise<LoginResult>;
   verifyMfa: (tempToken: string, code: string) => Promise<void>;
   logout: () => void;
-  register: (username: string, email: string, displayName: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    displayName: string,
+    password: string,
+    role: "USER" | "SELLER"
+  ) => Promise<void>;
   refetchUser: () => Promise<void>;
 }
 
@@ -83,8 +89,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setTokens(result.accessToken, result.refreshToken);
       setAccessToken(result.accessToken);
-      setUser(result.user);
-      setUserState(result.user);
+      try {
+        const profile = await usersApi.getMyProfile();
+        setUser(profile);
+        setUserState(profile);
+      } catch {
+        clearUser();
+        setUserState(null);
+      }
       return { mfaRequired: false };
     },
     []
@@ -95,8 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await authApi.verifyMfa(tempToken, code);
       setTokens(result.accessToken, result.refreshToken);
       setAccessToken(result.accessToken);
-      setUser(result.user);
-      setUserState(result.user);
+      const profile = await usersApi.getMyProfile();
+      setUser(profile);
+      setUserState(profile);
     },
     []
   );
@@ -110,8 +123,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const register = useCallback(
-    async (username: string, email: string, displayName: string, password: string): Promise<void> => {
-      await authApi.register({ username, email, displayName, password });
+    async (
+      username: string,
+      email: string,
+      displayName: string,
+      password: string,
+      role: "USER" | "SELLER"
+    ): Promise<void> => {
+      await authApi.register({ username, email, displayName, password, role });
     },
     []
   );
