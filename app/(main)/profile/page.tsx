@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   AlertTriangle,
   Check,
@@ -162,7 +163,7 @@ function splitPhoneValue(value: string): { dialCode: string; number: string } {
   const cleaned = raw.replace(/[^\d+]/g, "");
   if (!cleaned) return { dialCode: DEFAULT_DIAL_CODE, number: "" };
 
-  let digits = cleaned.startsWith("+") ? cleaned.slice(1) : cleaned;
+  const digits = cleaned.startsWith("+") ? cleaned.slice(1) : cleaned;
   const knownCodes = Object.keys(DIAL_CODE_FLAGS).sort((a, b) => b.length - a.length);
   const matched = knownCodes.find((code) => digits.startsWith(code));
 
@@ -846,10 +847,13 @@ function ProfileContent() {
                       <div className="shrink-0">
                         {mfaSetup ? (
                           <div className="overflow-hidden rounded-xl border-2 border-blue-200 bg-white p-2 shadow-sm">
-                            <img
+                            <Image
                               src={mfaSetup.qrCodeImageUri}
                               alt="QR MFA"
+                              width={128}
+                              height={128}
                               className="h-32 w-32 rounded-lg"
+                              unoptimized
                             />
                           </div>
                         ) : (
@@ -865,7 +869,7 @@ function ProfileContent() {
                         {mfaSetup && (
                           <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Secret Key</p>
-                            <p className="select-all break-all font-mono text-xs text-slate-700">{mfaSetup.secret}</p>
+                            <p className="select-all break-all font-mono text-xs text-slate-700">{mfaSetup?.secret ?? "-"}</p>
                           </div>
                         )}
                         <div className="flex items-center gap-2">
