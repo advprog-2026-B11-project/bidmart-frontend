@@ -66,6 +66,7 @@ function rawToProfile(raw: Record<string, unknown>): UserProfile {
     phoneNumber:     (raw.phoneNumber ?? null) as string | null,
     shippingAddress: (raw.shippingAddress ?? null) as string | null,
     mfaEnabled:      Boolean(raw.mfaEnabled ?? raw.isMfaEnabled ?? false),
+    isEmailVerified: Boolean(raw.isEmailVerified ?? raw.emailVerified ?? false),
     createdAt:       String(raw.createdAt ?? now),
     updatedAt:       String(raw.updatedAt ?? now),
   };
