@@ -231,6 +231,16 @@ export function Header() {
                 Admin Panel
               </Link>
             )}
+
+            {!isLoading && isAuthenticated && !isSeller && (
+              <NavItem href={ROUTES.MY_BIDS}>Bid Saya</NavItem>
+            )}
+            {!isLoading && isAuthenticated && isSeller && (
+              <>
+                <NavItem href={ROUTES.MY_LISTINGS}>Listing Saya</NavItem>
+                <NavItem href={ROUTES.MY_BIDS}>Bid Saya</NavItem>
+              </>
+            )}
           </nav>
 
           {/* Desktop actions */}
