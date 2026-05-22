@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Gavel, Trophy } from "lucide-react";
@@ -9,9 +9,12 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/hooks/useAuth";
 import { cn, formatRupiah, formatRelativeTime } from "@/lib/utils";
-import { AuctionStatus } from "@/constants/enums";
+import { AuctionStatus, NotificationType } from "@/constants/enums";
 import * as bidsApi from "@/lib/api/bids";
-import type { Bid } from "@/types/api";
+import * as listingsApi from "@/lib/api/listings";
+import type { Bid, Listing, Notification } from "@/types/api";
+
+const POLL_INTERVAL_MS = 10_000;
 
 /* ─── Status derivation ──────────────────────────────────────────────────── */
 
@@ -22,14 +25,25 @@ function deriveBidStatus(bid: Bid, userId: string): BidStatus {
   if (!listing) return "tutup";
 
   const { status } = listing;
+  const hasEndedByTime = listing.endAt
+    ? new Date(listing.endAt).getTime() <= Date.now()
+    : false;
   const isHighest =
     listing.currentHighestBidderId === userId ||
     bid.isWinning;
 
-  if (status === AuctionStatus.ACTIVE || status === AuctionStatus.EXTENDED) {
+  if (
+    (status === AuctionStatus.ACTIVE || status === AuctionStatus.EXTENDED) &&
+    !hasEndedByTime
+  ) {
     return isHighest ? "aktif" : "kalah";
   }
-  if (status === AuctionStatus.ENDED || status === AuctionStatus.SOLD) {
+  if (
+    status === AuctionStatus.ENDED ||
+    status === AuctionStatus.CLOSED ||
+    status === AuctionStatus.SOLD ||
+    status === AuctionStatus.WON
+  ) {
     return isHighest ? "menang" : "kalah";
   }
   return "tutup";
@@ -44,6 +58,28 @@ const statusDisplay: Record<
   kalah:  { label: "Dikalahkan", variant: "danger" },
   tutup:  { label: "Ditutup",   variant: "default" },
 };
+
+async function attachFreshListings(bids: Bid[]): Promise<Bid[]> {
+  const listingIds = Array.from(new Set(bids.map((bid) => bid.listingId).filter(Boolean)));
+  if (listingIds.length === 0) return bids;
+
+  const results = await Promise.allSettled(
+    listingIds.map(async (id) => [id, await listingsApi.getById(id)] as const)
+  );
+
+  const listingById = new Map<string, Listing>();
+  results.forEach((result) => {
+    if (result.status === "fulfilled") {
+      const [id, listing] = result.value;
+      listingById.set(id, listing);
+    }
+  });
+
+  return bids.map((bid) => ({
+    ...bid,
+    listing: listingById.get(bid.listingId) ?? bid.listing,
+  }));
+}
 
 /* ─── Filter tabs ─────────────────────────────────────────────────────────── */
 
@@ -167,12 +203,14 @@ function MyBidsContent() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const [tab,     setTab]     = useState<FilterTab>("semua");
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const doFetch = useCallback((): Promise<void> => {
     return bidsApi
       .getMyBids()
-      .then((res) => {
-        setBids(res ?? []);
+      .then(async (res) => {
+        setBids(await attachFreshListings(res ?? []));
+        setError(false);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -180,6 +218,30 @@ function MyBidsContent() {
 
   useEffect(() => {
     doFetch();
+  }, [doFetch]);
+
+  useEffect(() => {
+    pollTimerRef.current = setInterval(() => {
+      if (document.visibilityState === "visible") doFetch();
+    }, POLL_INTERVAL_MS);
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [doFetch]);
+
+  useEffect(() => {
+    function onWsNotification(e: Event) {
+      const notification = (e as CustomEvent<Notification>).detail;
+      const relevant =
+        notification.type === NotificationType.BID_PLACED ||
+        notification.type === NotificationType.BID_OUTBID ||
+        notification.type === NotificationType.AUCTION_ENDED ||
+        notification.type === NotificationType.AUCTION_WON;
+      if (relevant) doFetch();
+    }
+
+    window.addEventListener("ws-notification", onWsNotification);
+    return () => window.removeEventListener("ws-notification", onWsNotification);
   }, [doFetch]);
 
   /* Filtered list */

@@ -142,7 +142,7 @@ function EditListingContent() {
         categoryId: formData.categoryId,
         startingPrice: parseInt(formData.startingPrice, 10),
         ...(formData.reservePrice ? { reservePrice: parseInt(formData.reservePrice, 10) } : {}),
-        endTime: new Date(formData.endTime).toISOString(),
+        endTime: formData.endTime,
       });
 
       setSaved(true);

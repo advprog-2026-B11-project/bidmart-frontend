@@ -59,10 +59,20 @@ export async function getTransactions(
   page = 0,
   size = 20
 ): Promise<PaginatedResponse<Transaction>> {
-  const { data } = await client.get<PaginatedResponse<Transaction>>(
+  const { data } = await client.get<PaginatedResponse<Transaction> | Transaction[]>(
     "/api/wallet/transactions",
     { params: { page, size } }
   );
+  if (Array.isArray(data)) {
+    return {
+      content: data,
+      page: 0,
+      size: data.length,
+      totalElements: data.length,
+      totalPages: 1,
+      last: true,
+    };
+  }
   return data;
 }
 

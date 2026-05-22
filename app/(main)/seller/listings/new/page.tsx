@@ -174,7 +174,7 @@ function CreateListingContent() {
     startingPrice: parseInt(formData.startingPrice, 10),
     ...(formData.reservePrice ? { reservePrice: parseInt(formData.reservePrice, 10) } : {}),
     startAt: new Date().toISOString(),
-    endAt: new Date(formData.endTime).toISOString(),
+    endAt: formData.endTime,
   }), [formData]);
 
   const handlePublish = useCallback(async () => {

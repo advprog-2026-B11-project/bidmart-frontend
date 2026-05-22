@@ -34,7 +34,9 @@ const statusConfig: Record<
   ACTIVE:    { label: "Aktif",        variant: "success"               },
   EXTENDED:  { label: "Diperpanjang", variant: "warning", pulse: true  },
   ENDED:     { label: "Berakhir",     variant: "default"               },
+  CLOSED:    { label: "Berakhir",     variant: "default"               },
   SOLD:      { label: "Terjual",      variant: "info"                  },
+  WON:       { label: "Terjual",      variant: "info"                  },
   DRAFT:     { label: "Draft",        variant: "default"               },
   CANCELLED: { label: "Dibatalkan",   variant: "danger"                },
 };
@@ -218,7 +220,11 @@ export default function ListingDetailPage() {
   }
 
   const statusInfo = statusConfig[listing.status] ?? { label: listing.status, variant: "default" as const };
-  const isClosed   = listing.status === AuctionStatus.ENDED || listing.status === AuctionStatus.SOLD;
+  const isClosed   =
+    listing.status === AuctionStatus.ENDED ||
+    listing.status === AuctionStatus.CLOSED ||
+    listing.status === AuctionStatus.SOLD ||
+    listing.status === AuctionStatus.WON;
   const isActive   = listing.status === AuctionStatus.ACTIVE || listing.status === AuctionStatus.EXTENDED;
   const price      = listing.totalBids > 0 ? listing.currentPrice : listing.startingPrice;
 
@@ -247,7 +253,7 @@ export default function ListingDetailPage() {
           <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
             <p className="text-sm font-semibold text-slate-700">
               Lelang berakhir
-              {listing.status === AuctionStatus.SOLD && (
+              {(listing.status === AuctionStatus.SOLD || listing.status === AuctionStatus.WON) && (
                 <span className="ml-1 font-normal text-slate-500">
                   — Lelang telah dimenangkan.
                 </span>
