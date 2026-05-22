@@ -138,7 +138,7 @@ function EditListingContent() {
       await listingsApi.update(id, {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        imageUrl: formData.imageUrl,
+        imageUrls: formData.imageUrl ? [formData.imageUrl] : [],
         categoryId: formData.categoryId,
         startingPrice: parseInt(formData.startingPrice, 10),
         ...(formData.reservePrice ? { reservePrice: parseInt(formData.reservePrice, 10) } : {}),

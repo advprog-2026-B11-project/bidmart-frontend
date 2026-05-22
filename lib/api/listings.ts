@@ -70,8 +70,8 @@ function normalizePage(data: PaginatedResponse<BackendListing>): PaginatedRespon
 function toBackendPayload(data: CreateListingRequest | UpdateListingRequest) {
   return {
     ...data,
-    imageUrl: data.imageUrl ?? data.imageUrls?.[0],
-    endTime: data.endTime ?? data.endAt,
+    imageUrl: data.imageUrls?.[0],
+    endTime: (data as UpdateListingRequest).endTime ?? data.endAt,
     imageUrls: undefined,
     startAt: undefined,
     endAt: undefined,
