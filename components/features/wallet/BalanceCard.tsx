@@ -67,7 +67,7 @@ export function BalanceCard({
           </div>
         ) : (
           <div className="mt-1 flex items-center">
-            <p className="font-serif text-4xl font-bold tabular-nums leading-tight tracking-tight text-amber-300 sm:text-5xl">
+            <p className="font-serif text-2xl font-bold tabular-nums leading-tight tracking-tight text-amber-300 sm:text-3xl md:text-4xl">
               {animatedBalance !== null
                 ? formatRupiah(animatedBalance)
                 : "Rp —"}

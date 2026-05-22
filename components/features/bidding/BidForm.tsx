@@ -295,7 +295,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
               step={1000}
               required
               className={cn(
-                "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums",
+                "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                 "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
                 "transition-all duration-150",
                 flashAmount && "scale-[1.015] border-yellow-400 bg-yellow-50 ring-2 ring-yellow-300/40",
@@ -352,7 +352,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
                 min={numAmount || minRequired}
                 step={1000}
                 className={cn(
-                  "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums",
+                  "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                   "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
                   "transition-colors duration-150",
                   proxyError ? "border-red-400" : "border-slate-200"

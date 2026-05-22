@@ -72,13 +72,13 @@ function isEditable(status: string): boolean {
 
 function RowSkeleton() {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
-      <Skeleton className="h-16 w-16 shrink-0 rounded-lg" />
+    <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm">
+      <Skeleton className="h-14 w-14 shrink-0 rounded-xl" />
       <div className="flex-1 space-y-2">
-        <Skeleton className="h-4 w-2/3 rounded" />
+        <Skeleton className="h-3.5 w-2/3 rounded" />
         <Skeleton className="h-3 w-1/3 rounded" />
       </div>
-      <Skeleton className="h-6 w-20 rounded-full" />
+      <Skeleton className="h-5 w-20 rounded-full" />
       <Skeleton className="h-8 w-8 rounded-lg" />
     </div>
   );
@@ -105,7 +105,7 @@ function EmptyState({ tab }: { tab: ListingTab }) {
       </p>
       <Link
         href={ROUTES.CREATE_LISTING}
-        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow"
       >
         <Plus className="h-4 w-4" />
         Buat listing pertama
@@ -224,11 +224,11 @@ function ListingRow({ listing, onDelete }: ListingRowProps) {
   const highestBid = listing.totalBids > 0 ? listing.currentPrice : null;
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 transition-shadow hover:border-slate-200 hover:shadow-sm">
+    <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60 transition-all hover:shadow-md hover:ring-slate-200/80">
       {/* Thumbnail */}
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-slate-50">
         {thumb ? (
-          <Image src={thumb} alt={listing.title} fill sizes="64px" className="object-cover" />
+          <Image src={thumb} alt={listing.title} fill sizes="56px" className="object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center">
             <Package className="h-6 w-6 text-slate-300" />
@@ -330,20 +330,21 @@ function MyListingsContent() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-800">
             Listing Saya
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-400">
             Kelola semua karya yang Anda lelang di BidMart.
           </p>
         </div>
         <Link
           href={ROUTES.CREATE_LISTING}
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
+          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow"
         >
           <Plus className="h-4 w-4" />
           Buat Listing Baru
@@ -351,16 +352,16 @@ function MyListingsContent() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+      <div className="mb-6 flex gap-1 rounded-2xl bg-slate-100/70 p-1">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-all duration-150",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-medium transition-all duration-150",
               tab === key
-                ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-white text-slate-800 shadow-sm"
+                : "text-slate-400 hover:text-slate-600"
             )}
           >
             {label}
@@ -394,7 +395,7 @@ function MyListingsContent() {
       ) : filtered.length === 0 ? (
         <EmptyState tab={tab} />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {filtered.map((l) => (
             <ListingRow key={l.id} listing={l} onDelete={handleDelete} />
           ))}
@@ -402,13 +403,14 @@ function MyListingsContent() {
           {hasMore && (
             <button
               onClick={() => { setLoading(true); doFetch(page + 1); }}
-              className="mt-2 w-full rounded-xl border border-slate-200 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+              className="mt-2 w-full rounded-2xl bg-white py-3 text-sm font-medium text-slate-500 shadow-sm ring-1 ring-slate-100/60 transition-all hover:shadow hover:text-slate-700"
             >
               Muat lebih banyak
             </button>
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
