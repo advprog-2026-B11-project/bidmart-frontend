@@ -14,6 +14,7 @@ import {
 import { AuthGuard } from "@/components/providers/AuthGuard";
 import { BalanceCard } from "@/components/features/wallet/BalanceCard";
 import { TransactionBadge, isCredit } from "@/components/features/wallet/TransactionBadge";
+import { TransactionDetailModal } from "@/components/features/wallet/TransactionDetailModal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn, formatRupiah, formatRelativeTime, formatDateTime } from "@/lib/utils";
 import { TransactionType } from "@/constants/enums";
@@ -38,7 +39,7 @@ function calcStats(transactions: Transaction[]) {
   });
 
   const topUpTotal = thisMonth
-    .filter((t) => t.type === TransactionType.TOP_UP)
+    .filter((t) => t.type === TransactionType.TOPUP)
     .reduce((s, t) => s + t.amount, 0);
 
   const paymentCount = thisMonth.filter(
@@ -46,7 +47,7 @@ function calcStats(transactions: Transaction[]) {
   ).length;
 
   const payoutTotal = thisMonth
-    .filter((t) => t.type === TransactionType.PAYOUT)
+    .filter((t) => t.type === TransactionType.INCOME)
     .reduce((s, t) => s + t.amount, 0);
 
   return { topUpTotal, paymentCount, payoutTotal };
@@ -58,110 +59,76 @@ type TypeFilter = "SEMUA" | TransactionType;
 
 const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
   { key: "SEMUA", label: "Semua" },
-  { key: TransactionType.TOP_UP, label: "Top Up" },
-  { key: TransactionType.BID_HOLD, label: "Hold" },
-  { key: TransactionType.BID_REFUND, label: "Refund" },
+  { key: TransactionType.TOPUP, label: "Top Up" },
+  { key: TransactionType.HOLD, label: "Hold" },
+  { key: TransactionType.REFUND, label: "Refund" },
   { key: TransactionType.PAYMENT, label: "Pembayaran" },
-  { key: TransactionType.PAYOUT, label: "Pendapatan" },
+  { key: TransactionType.INCOME, label: "Pendapatan" },
   { key: TransactionType.WITHDRAWAL, label: "Tarik Dana" },
-  { key: TransactionType.COMMISSION, label: "Komisi" },
 ];
 
 /* ─── Transaction row ────────────────────────────────────────────────────── */
 
-function TransactionRow({ tx }: { tx: Transaction }) {
-  const [expanded, setExpanded] = useState(false);
+function getTransactionDescription(type: TransactionType) {
+  switch (type) {
+    case TransactionType.TOPUP: return "Top Up Saldo";
+    case TransactionType.HOLD: return "Hold Saldo (Bid)";
+    case TransactionType.REFUND: return "Pengembalian Saldo (Bid Kalah)";
+    case TransactionType.PAYMENT: return "Pembayaran (Bid Menang)";
+    case TransactionType.INCOME: return "Penerimaan Dana";
+    case TransactionType.WITHDRAWAL: return "Penarikan Dana";
+    default: return "Transaksi";
+  }
+}
+
+function TransactionRow({ tx, onClick }: { tx: Transaction, onClick: () => void }) {
   const credit = isCredit(tx.type);
+  const description = tx.description || getTransactionDescription(tx.type);
 
   return (
-    <div>
-      <button
-        onClick={() => setExpanded((p) => !p)}
-        className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-slate-50"
-      >
-        {/* Badge */}
-        <div className="shrink-0">
-          <TransactionBadge type={tx.type} />
-        </div>
+    <button
+      onClick={onClick}
+      className="group flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-slate-50"
+    >
+      {/* Badge */}
+      <div className="shrink-0">
+        <TransactionBadge type={tx.type} />
+      </div>
 
-        {/* Description */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-slate-800">
-            {tx.description}
+      {/* Description */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-slate-800">
+          {description}
+        </p>
+        {tx.referenceId && (
+          <p className="mt-0.5 truncate text-[11px] text-slate-400">
+            Ref: {tx.referenceId.slice(0, 8)}...
           </p>
-          {tx.referenceId && (
-            <p className="mt-0.5 truncate text-[11px] text-slate-400">
-              Ref: {tx.referenceId}
-            </p>
+        )}
+      </div>
+
+      {/* Date */}
+      <div className="group/date relative shrink-0 text-right">
+        <p className="text-xs text-slate-400">
+          {formatRelativeTime(tx.createdAt)}
+        </p>
+        <span className="pointer-events-none absolute -bottom-6 right-0 z-10 hidden whitespace-nowrap rounded bg-slate-800 px-2 py-1 text-[10px] text-white group-hover/date:block">
+          {formatDateTime(tx.createdAt)}
+        </span>
+      </div>
+
+      {/* Amount */}
+      <div className="shrink-0 text-right pl-2">
+        <p
+          className={cn(
+            "font-mono text-sm font-semibold tabular-nums",
+            credit ? "text-emerald-600" : "text-slate-800"
           )}
-        </div>
-
-        {/* Date */}
-        <div className="group/date relative shrink-0 text-right">
-          <p className="text-xs text-slate-400">
-            {formatRelativeTime(tx.createdAt)}
-          </p>
-          <span className="pointer-events-none absolute -bottom-5 right-0 z-10 hidden whitespace-nowrap rounded bg-slate-900 px-1.5 py-0.5 text-[10px] text-white group-hover/date:block">
-            {formatDateTime(tx.createdAt)}
-          </span>
-        </div>
-
-        {/* Amount */}
-        <div className="shrink-0 text-right">
-          <p
-            className={cn(
-              "font-mono text-sm font-semibold tabular-nums",
-              credit ? "text-emerald-600" : "text-slate-800"
-            )}
-          >
-            {credit ? "+" : "−"}{formatRupiah(tx.amount)}
-          </p>
-        </div>
-
-        {/* Expand chevron */}
-        <div className="shrink-0 text-slate-300 transition-colors group-hover:text-slate-400">
-          {expanded ? (
-            <ChevronUp className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" />
-          )}
-        </div>
-      </button>
-
-      {/* Expanded detail */}
-      {expanded && (
-        <div className="mx-4 mb-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3">
-            <div>
-              <p className="font-semibold uppercase tracking-wide text-slate-400">
-                Saldo sebelum
-              </p>
-              <p className="mt-0.5 tabular-nums text-slate-700">
-                {formatRupiah(tx.balanceBefore)}
-              </p>
-            </div>
-            <div>
-              <p className="font-semibold uppercase tracking-wide text-slate-400">
-                Saldo sesudah
-              </p>
-              <p className="mt-0.5 tabular-nums text-slate-700">
-                {formatRupiah(tx.balanceAfter)}
-              </p>
-            </div>
-            <div>
-              <p className="font-semibold uppercase tracking-wide text-slate-400">
-                Waktu
-              </p>
-              <p className="mt-0.5 text-slate-700">
-                {format(new Date(tx.createdAt), "d MMM yyyy, HH:mm", {
-                  locale: idLocale,
-                })}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        >
+          {credit ? "+" : "−"}{formatRupiah(tx.amount)}
+        </p>
+      </div>
+    </button>
   );
 }
 
@@ -198,6 +165,7 @@ function WalletContent() {
   const [txLoading,    setTxLoading]    = useState(false);
   const [page,         setPage]         = useState(0);
   const [hasMore,      setHasMore]      = useState(false);
+  const [selectedTx,   setSelectedTx]   = useState<Transaction | null>(null);
 
   /* Filters */
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("SEMUA");
@@ -383,7 +351,7 @@ function WalletContent() {
         ) : (
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100/60 divide-y divide-slate-50">
             {filtered.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} />
+              <TransactionRow key={tx.id} tx={tx} onClick={() => setSelectedTx(tx)} />
             ))}
           </div>
         )}
@@ -406,6 +374,12 @@ function WalletContent() {
           </button>
         )}
       </div>
+
+      <TransactionDetailModal
+        transaction={selectedTx}
+        isOpen={!!selectedTx}
+        onClose={() => setSelectedTx(null)}
+      />
     </div>
     </div>
   );

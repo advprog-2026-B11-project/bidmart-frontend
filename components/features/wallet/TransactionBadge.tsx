@@ -24,21 +24,21 @@ const CONFIG: Record<
     border: string;
   }
 > = {
-  [TransactionType.TOP_UP]: {
+  [TransactionType.TOPUP]: {
     label: "Top Up",
     icon: ArrowDownLeft,
     bg: "bg-emerald-50",
     text: "text-emerald-700",
     border: "border-emerald-200",
   },
-  [TransactionType.BID_HOLD]: {
+  [TransactionType.HOLD]: {
     label: "Penahanan Bid",
     icon: Lock,
     bg: "bg-amber-50",
     text: "text-amber-700",
     border: "border-amber-200",
   },
-  [TransactionType.BID_REFUND]: {
+  [TransactionType.REFUND]: {
     label: "Refund Bid",
     icon: RotateCcw,
     bg: "bg-sky-50",
@@ -52,19 +52,12 @@ const CONFIG: Record<
     text: "text-red-700",
     border: "border-red-200",
   },
-  [TransactionType.PAYOUT]: {
+  [TransactionType.INCOME]: {
     label: "Pendapatan",
     icon: ArrowUpRight,
     bg: "bg-violet-50",
     text: "text-violet-700",
     border: "border-violet-200",
-  },
-  [TransactionType.COMMISSION]: {
-    label: "Komisi",
-    icon: BadgeDollarSign,
-    bg: "bg-slate-50",
-    text: "text-slate-600",
-    border: "border-slate-200",
   },
   [TransactionType.WITHDRAWAL]: {
     label: "Tarik Dana",
@@ -76,7 +69,7 @@ const CONFIG: Record<
 };
 
 export function TransactionBadge({ type, className }: TransactionBadgeProps) {
-  const cfg = CONFIG[type] ?? CONFIG[TransactionType.COMMISSION];
+  const cfg = CONFIG[type] ?? CONFIG[TransactionType.PAYMENT];
   const Icon = cfg.icon;
 
   return (
@@ -98,8 +91,8 @@ export function TransactionBadge({ type, className }: TransactionBadgeProps) {
 /** Returns true if the transaction type adds to available balance */
 export function isCredit(type: TransactionType): boolean {
   return (
-    type === TransactionType.TOP_UP ||
-    type === TransactionType.BID_REFUND ||
-    type === TransactionType.PAYOUT
+    type === TransactionType.TOPUP ||
+    type === TransactionType.REFUND ||
+    type === TransactionType.INCOME
   );
 }
