@@ -157,8 +157,17 @@ export function Header() {
 
           {/* Desktop nav */}
           <nav className="hidden flex-1 items-center justify-center gap-0.5 md:flex">
+            <NavItem href={ROUTES.HOME}>Beranda</NavItem>
             <NavItem href={ROUTES.CATALOG}>Katalog</NavItem>
-            <NavItem href="/how-it-works">Cara Kerja</NavItem>
+            {!isLoading && isAuthenticated && !isSeller && (
+              <NavItem href={ROUTES.MY_BIDS}>Bid Saya</NavItem>
+            )}
+            {!isLoading && isAuthenticated && isSeller && (
+              <>
+                <NavItem href={ROUTES.MY_LISTINGS}>Listing Saya</NavItem>
+                <NavItem href={ROUTES.MY_BIDS}>Bid Saya</NavItem>
+              </>
+            )}
           </nav>
 
           {/* Desktop actions */}
@@ -327,8 +336,8 @@ export function Header() {
           </form>
 
           <nav className="space-y-0.5">
-            <DrawerLink href={ROUTES.CATALOG}    onNavigate={closeDrawer}>Katalog</DrawerLink>
-            <DrawerLink href="/how-it-works"     onNavigate={closeDrawer}>Cara Kerja</DrawerLink>
+            <DrawerLink href={ROUTES.HOME}    onNavigate={closeDrawer}>Beranda</DrawerLink>
+            <DrawerLink href={ROUTES.CATALOG} onNavigate={closeDrawer}>Katalog</DrawerLink>
           </nav>
 
           {!isLoading && (
