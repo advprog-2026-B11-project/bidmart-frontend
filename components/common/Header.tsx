@@ -13,6 +13,7 @@ import {
   Package,
   Search,
   Settings,
+  ShieldCheck,
   User,
   Wallet as WalletIcon,
   X,
@@ -219,6 +220,17 @@ export function Header() {
             </div>
 
             <NavItem href="/how-it-works">Cara Kerja</NavItem>
+
+            {/* Admin panel shortcut — only visible when logged in as ADMIN */}
+            {isAdmin && (
+              <Link
+                href={ROUTES.ADMIN.USERS}
+                className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Admin Panel
+              </Link>
+            )}
           </nav>
 
           {/* Desktop actions */}
@@ -404,7 +416,16 @@ export function Header() {
                     {isSeller && <DrawerLink href={ROUTES.MY_LISTINGS} onNavigate={closeDrawer}>Listing Saya</DrawerLink>}
                     <DrawerLink href={ROUTES.WALLET}       onNavigate={closeDrawer}>Wallet</DrawerLink>
                     <DrawerLink href={ROUTES.SETTINGS}     onNavigate={closeDrawer}>Pengaturan</DrawerLink>
-                    {isAdmin  && <DrawerLink href={ROUTES.ADMIN.USERS} onNavigate={closeDrawer}>Admin Panel</DrawerLink>}
+                    {isAdmin && (
+                      <Link
+                        href={ROUTES.ADMIN.USERS}
+                        onClick={closeDrawer}
+                        className="flex items-center gap-2.5 rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      >
+                        <ShieldCheck className="h-4 w-4" />
+                        Admin Panel
+                      </Link>
+                    )}
                   </nav>
 
                   <div className="mt-4 border-t border-slate-100 pt-4">

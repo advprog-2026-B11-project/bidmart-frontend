@@ -24,6 +24,7 @@ import { UserRole } from "@/constants/enums";
 interface LoginResult {
   mfaRequired: boolean;
   tempToken?: string;
+  role?: UserRole;
 }
 
 interface AuthContextValue {
@@ -32,7 +33,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (identifier: string, password: string) => Promise<LoginResult>;
-  verifyMfa: (tempToken: string, code: string) => Promise<void>;
+  verifyMfa: (tempToken: string, code: string) => Promise<UserRole>;
   logout: () => void;
   register: (
     username: string,
@@ -115,32 +116,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setTokens(result.accessToken, result.refreshToken);
       setAccessToken(result.accessToken);
-      const rawUser = result.user as unknown as Record<string, unknown> | undefined | null;
-      if (rawUser) {
-        const immediate = rawToProfile(rawUser);
-        setUserState(immediate);
-        setUser(immediate);
-      }
+      // BE may return a nested `user` object or a flat response — handle both.
+      const flat = result as unknown as Record<string, unknown>;
+      const rawUser = (flat.user ?? flat) as Record<string, unknown>;
+      const immediate = rawToProfile(rawUser);
+      setUserState(immediate);
+      setUser(immediate);
+      let resolvedRole = immediate.role;
       try {
         const profile = await usersApi.getMyProfile();
         setUser(profile);
         setUserState(profile);
+        resolvedRole = profile.role;
       } catch {
-        // keep the immediate profile from auth response if getMyProfile fails
+        // keep the immediate profile extracted above
       }
-      return { mfaRequired: false };
+      return { mfaRequired: false, role: resolvedRole };
     },
     []
   );
 
   const verifyMfa = useCallback(
-    async (tempToken: string, code: string): Promise<void> => {
+    async (tempToken: string, code: string): Promise<UserRole> => {
       const result = await authApi.verifyMfa(tempToken, code);
       setTokens(result.accessToken, result.refreshToken);
       setAccessToken(result.accessToken);
-      const profile = await usersApi.getMyProfile();
-      setUser(profile);
-      setUserState(profile);
+      const flat = result as unknown as Record<string, unknown>;
+      const rawUser = (flat.user ?? flat) as Record<string, unknown>;
+      const immediate = rawToProfile(rawUser);
+      setUserState(immediate);
+      setUser(immediate);
+      let resolvedRole = immediate.role;
+      try {
+        const profile = await usersApi.getMyProfile();
+        setUser(profile);
+        setUserState(profile);
+        resolvedRole = profile.role;
+      } catch {
+        // keep immediate profile from MFA response
+      }
+      return resolvedRole;
     },
     []
   );

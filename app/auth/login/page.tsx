@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/client";
 import { ROUTES } from "@/constants/routes";
+import { UserRole } from "@/constants/enums";
 
 const loginSchema = z.object({
   identifier: z.string().min(3, "Minimal 3 karakter"),
@@ -42,7 +43,7 @@ function LoginForm() {
         return;
       }
       toast.success("Selamat datang kembali!");
-      router.push(ROUTES.HOME);
+      router.push(result.role === UserRole.ADMIN ? ROUTES.ADMIN.USERS : ROUTES.HOME);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Login gagal. Coba lagi.";
       toast.error(msg);
