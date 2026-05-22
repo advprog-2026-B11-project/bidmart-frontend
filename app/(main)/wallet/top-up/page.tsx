@@ -166,17 +166,18 @@ function TopUpContent() {
   );
 
   return (
+    <div className="min-h-screen bg-white">
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Back link */}
       <Link
         href={ROUTES.WALLET}
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-slate-700"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-slate-400 transition-colors hover:text-slate-600"
       >
         <ArrowLeft className="h-4 w-4" />
         Kembali ke Dompet
       </Link>
 
-      <h1 className="mb-6 font-serif text-3xl font-bold tracking-tight text-slate-900">
+      <h1 className="mb-6 font-serif text-3xl font-bold tracking-tight text-slate-800">
         Top Up Saldo
       </h1>
 
@@ -186,7 +187,7 @@ function TopUpContent() {
         <form onSubmit={handleSubmit} className="space-y-6">
 
           {/* Amount */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60">
             <label className="mb-3 block text-sm font-semibold text-slate-700">
               Jumlah Top Up
             </label>
@@ -222,12 +223,12 @@ function TopUpContent() {
                 placeholder="0"
                 min={1}
                 max={MAX_AMOUNT}
-                step={1000}
+                step="any"
                 required
                 className={cn(
-                  "w-full rounded-lg border bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium tabular-nums",
+                  "w-full rounded-lg border bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                   "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
-                  "transition-colors",
+                  "transition-colors placeholder:text-slate-300",
                   numAmount > MAX_AMOUNT ? "border-red-400" : "border-slate-200"
                 )}
               />
@@ -240,7 +241,7 @@ function TopUpContent() {
           </div>
 
           {/* Payment method */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60">
             <p className="mb-3 text-sm font-semibold text-slate-700">
               Metode Pembayaran
             </p>
@@ -277,7 +278,7 @@ function TopUpContent() {
           </div>
 
           {/* Bank details */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-4">
             <p className="text-sm font-semibold text-slate-700">
               Detail Transfer Bank
             </p>
@@ -356,14 +357,14 @@ function TopUpContent() {
         <div className="space-y-4">
           {wallet ? (
             <BalanceCard
-              balance={wallet.balance}
-              holdBalance={wallet.holdBalance}
+              balance={wallet.balanceAvailable}
+              holdBalance={wallet.balanceLocked}
             />
           ) : (
             <Skeleton className="h-32 rounded-2xl" />
           )}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
               Ringkasan
             </p>
@@ -397,7 +398,7 @@ function TopUpContent() {
                 </span>
                 <span className="font-bold tabular-nums text-blue-700">
                   {wallet && numAmount > 0
-                    ? formatRupiah(wallet.balance + numAmount)
+                    ? formatRupiah(wallet.balanceAvailable + numAmount)
                     : "—"}
                 </span>
               </div>
@@ -405,6 +406,7 @@ function TopUpContent() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -63,6 +63,7 @@ const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
   { key: TransactionType.BID_REFUND, label: "Refund" },
   { key: TransactionType.PAYMENT, label: "Pembayaran" },
   { key: TransactionType.PAYOUT, label: "Pendapatan" },
+  { key: TransactionType.WITHDRAWAL, label: "Tarik Dana" },
   { key: TransactionType.COMMISSION, label: "Komisi" },
 ];
 
@@ -252,22 +253,23 @@ function WalletContent() {
   if (loading) return <WalletSkeleton />;
 
   return (
+    <div className="min-h-screen bg-white">
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-900">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-800">
           Dompet
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-400">
           Kelola saldo dan riwayat transaksi Anda.
         </p>
       </div>
 
       {/* Hero balance card */}
       <BalanceCard
-        balance={wallet?.balance ?? null}
-        holdBalance={wallet?.holdBalance}
+        balance={wallet?.balanceAvailable ?? null}
+        holdBalance={wallet?.balanceLocked}
         loading={!wallet}
         className="mb-4"
       />
@@ -276,14 +278,14 @@ function WalletContent() {
       <div className="mb-8 grid grid-cols-2 gap-3">
         <Link
           href={ROUTES.WALLET_TOP_UP}
-          className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-600"
+          className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow"
         >
           <ArrowDownLeft className="h-4 w-4" />
           Top Up
         </Link>
         <Link
           href={ROUTES.WALLET_WITHDRAW}
-          className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/80 transition-all hover:shadow hover:ring-slate-300"
         >
           <ArrowUpRight className="h-4 w-4" />
           Tarik Dana
@@ -292,28 +294,28 @@ function WalletContent() {
 
       {/* Quick stats */}
       <div className="mb-8 grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-slate-100 bg-white p-4">
+        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
             Top Up Bulan Ini
           </p>
-          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-900">
+          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
             {formatRupiah(stats.topUpTotal)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-100 bg-white p-4">
+        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
             Bid Menang
           </p>
-          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-900">
+          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
             {stats.paymentCount}x
           </p>
           <p className="text-[10px] text-slate-400">bulan ini</p>
         </div>
-        <div className="rounded-xl border border-slate-100 bg-white p-4">
+        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
             Pendapatan
           </p>
-          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-900">
+          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
             {formatRupiah(stats.payoutTotal)}
           </p>
           <p className="text-[10px] text-slate-400">bulan ini</p>
@@ -322,7 +324,7 @@ function WalletContent() {
 
       {/* Transaction history */}
       <div>
-        <h2 className="mb-4 font-serif text-xl font-bold text-slate-900">
+        <h2 className="mb-4 font-serif text-xl font-bold text-slate-800">
           Riwayat Transaksi
         </h2>
 
@@ -375,11 +377,11 @@ function WalletContent() {
 
         {/* Ledger */}
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-slate-100 bg-white py-14 text-center">
+          <div className="rounded-2xl bg-white py-14 text-center shadow-sm ring-1 ring-slate-100/60">
             <p className="text-sm text-slate-400">Tidak ada transaksi ditemukan.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-100 bg-white divide-y divide-slate-50">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100/60 divide-y divide-slate-50">
             {filtered.map((tx) => (
               <TransactionRow key={tx.id} tx={tx} />
             ))}
@@ -394,7 +396,7 @@ function WalletContent() {
               fetchTx(page + 1);
             }}
             disabled={txLoading}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-medium text-slate-500 shadow-sm ring-1 ring-slate-100/60 transition-all hover:shadow hover:text-slate-700 disabled:opacity-60"
           >
             {txLoading ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
@@ -404,6 +406,7 @@ function WalletContent() {
           </button>
         )}
       </div>
+    </div>
     </div>
   );
 }

@@ -33,13 +33,16 @@ function mapRole(role?: string): UserRole {
   return UserRole.BUYER;
 }
 
-function mapUserProfile(data: BackendUserProfile): UserProfile {
-  const now = new Date().toISOString();
+function normalizeUser(data: BackendUserProfile): UserProfile {
+  let avatar = data.imageUrl ?? null;
+  if (avatar && avatar.includes("example.com")) {
+    avatar = null;
+  }
   return {
     id: data.id,
     name: data.displayName || data.username,
     email: data.email,
-    avatarUrl: data.imageUrl ?? null,
+    avatarUrl: avatar,
     role: mapRole(data.role),
     phoneNumber: data.phoneNumber ?? null,
     shippingAddress: data.shippingAddress ?? null,
@@ -48,6 +51,10 @@ function mapUserProfile(data: BackendUserProfile): UserProfile {
     createdAt: data.createdAt ?? now,
     updatedAt: data.updatedAt ?? now,
   };
+}
+
+function mapUserProfile(data: BackendUserProfile): UserProfile {
+  return normalizeUser(data);
 }
 
 /** GET /api/users/me */

@@ -66,6 +66,13 @@ const CONFIG: Record<
     text: "text-slate-600",
     border: "border-slate-200",
   },
+  [TransactionType.WITHDRAWAL]: {
+    label: "Tarik Dana",
+    icon: ArrowUpRight,
+    bg: "bg-orange-50",
+    text: "text-orange-700",
+    border: "border-orange-200",
+  },
 };
 
 export function TransactionBadge({ type, className }: TransactionBadgeProps) {

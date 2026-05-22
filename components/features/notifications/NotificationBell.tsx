@@ -1,116 +1,35 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { Bell } from "lucide-react";
-import { cn, formatRelativeTime } from "@/lib/utils";
-import * as notificationsApi from "@/lib/api/notifications";
-import type { Notification } from "@/types/api";
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { notificationApi } from '@/lib/api/notifications';
+import { useAuth } from '@/hooks/useAuth';
 
-export function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const unread = notifications.filter((n) => !n.read).length;
+export default function NotificationBell() {
+  const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
-    notificationsApi.getUnread().then(setNotifications).catch(() => {});
-  }, []);
-
-  /* Real-time: prepend new notifications and bump unread count */
-  useEffect(() => {
-    function handler(e: Event) {
-      const n = (e as CustomEvent<Notification>).detail;
-      setNotifications((prev) => [n, ...prev]);
+    if (user?.id) {
+      notificationApi.getUnreadNotifications(user.id)
+        .then(data => setUnreadCount(data.length))
+        .catch(console.error);
     }
-    window.addEventListener("ws-notification", handler);
-    return () => window.removeEventListener("ws-notification", handler);
-  }, []);
+  }, [user]);
 
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [open]);
-
-  const handleMarkAllRead = () => {
-    notificationsApi.markAllRead().catch(() => {});
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
+  if (!user) return null;
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Notifikasi"
-        className="relative flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
-      >
-        <Bell className="h-5 w-5" />
-        {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white">
-            {unread > 9 ? "9+" : unread}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl animate-scale-in">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <span className="text-sm font-semibold text-slate-900">
-              Notifikasi{unread > 0 && <span className="ml-1.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">{unread}</span>}
-            </span>
-            {unread > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                Tandai semua dibaca
-              </button>
-            )}
-          </div>
-
-          {/* List */}
-          <div className="max-h-72 divide-y divide-slate-50 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-slate-400">
-                Tidak ada notifikasi baru
-              </p>
-            ) : (
-              notifications.slice(0, 6).map((n) => (
-                <div key={n.id} className={cn("px-4 py-3", !n.read && "bg-blue-50/50")}>
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium leading-snug text-slate-900">{n.title}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{n.body}</p>
-                      <p className="mt-1 text-[10px] text-slate-400">{formatRelativeTime(n.createdAt)}</p>
-                    </div>
-                    {!n.read && (
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t border-slate-100 px-4 py-2.5">
-            <Link
-              href="/notifications"
-              onClick={() => setOpen(false)}
-              className="text-xs font-medium text-blue-600 hover:underline"
-            >
-              Lihat semua notifikasi →
-            </Link>
-          </div>
-        </div>
+    <Link href="/notifications" className="relative p-2 text-slate-900 hover:bg-gray-100 rounded-full transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+      {unreadCount > 0 && (
+        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
       )}
-    </div>
+    </Link>
   );
 }
