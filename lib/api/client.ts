@@ -60,11 +60,23 @@ function redirectToLogin(): void {
   }
 }
 
+function redirectToHome(): void {
+  if (typeof window !== "undefined" && window.location.pathname !== "/") {
+    window.location.href = "/";
+  }
+}
+
 // Handle 401: silent token refresh, then retry. On double failure → logout.
+// Handle 403: redirect to home page immediately.
 client.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as RetryConfig;
+
+    if (error.response?.status === 403) {
+      redirectToHome();
+      return Promise.reject(normalizeError(error));
+    }
 
     if (error.response?.status !== 401 || original._retry) {
       return Promise.reject(normalizeError(error));

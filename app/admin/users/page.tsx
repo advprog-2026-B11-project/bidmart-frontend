@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  AlertTriangle,
   Check,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Search,
+  ShieldCheck,
   ShieldOff,
   UserCog,
   X,
@@ -16,10 +16,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/client";
 import * as adminApi from "@/lib/api/admin";
+import { useAuth } from "@/hooks/useAuth";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
-import type { AdminUser } from "@/types/api";
+import type { AdminRole, AdminUser } from "@/types/api";
 
 /* ─── Role badge colours ───────────────────────────────────────────────────── */
 
@@ -30,42 +31,61 @@ const ROLE_VARIANT: Record<string, "info" | "accent" | "danger" | "default"> = {
   BUYER:            "default",
 };
 
-const ALL_ROLES = ["BUYER", "SELLER", "ADMIN", "INTERNAL_SERVICE"];
+/* ─── Shared modal backdrop ────────────────────────────────────────────────── */
 
-/* ─── Deactivate confirmation dialog ──────────────────────────────────────── */
+function ModalBackdrop({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
 
-interface DeactivateDialogProps {
+/* ─── Status confirmation dialog ──────────────────────────────────────────── */
+
+interface StatusDialogProps {
   user: AdminUser;
+  action: "activate" | "deactivate";
   onConfirm: () => Promise<void>;
   onClose: () => void;
 }
 
-function DeactivateDialog({ user, onConfirm, onClose }: DeactivateDialogProps) {
+function StatusDialog({ user, action, onConfirm, onClose }: StatusDialogProps) {
   const [busy, setBusy] = useState(false);
+  const isDeactivate = action === "deactivate";
 
   const handleConfirm = async () => {
     setBusy(true);
-    try {
-      await onConfirm();
-    } finally {
-      setBusy(false);
-    }
+    try { await onConfirm(); } finally { setBusy(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-          <ShieldOff className="h-6 w-6 text-red-500" />
+    <ModalBackdrop onClose={onClose}>
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+        <div className={cn(
+          "mb-4 flex h-12 w-12 items-center justify-center rounded-full",
+          isDeactivate ? "bg-red-100" : "bg-emerald-100"
+        )}>
+          {isDeactivate
+            ? <ShieldOff className="h-6 w-6 text-red-500" />
+            : <ShieldCheck className="h-6 w-6 text-emerald-500" />
+          }
         </div>
-        <h3 className="text-base font-semibold text-slate-900">Nonaktifkan akun?</h3>
+        <h3 className="text-base font-semibold text-slate-900">
+          {isDeactivate ? "Nonaktifkan akun?" : "Aktifkan akun?"}
+        </h3>
         <p className="mt-2 text-sm text-slate-500">
-          Akun <span className="font-semibold text-slate-800">{user.displayName || user.username}</span> ({user.email}) akan dinonaktifkan dan semua sesi aktifnya di seluruh perangkat akan langsung diinvalidasi.
+          Akun <span className="font-semibold text-slate-800">{user.displayName || user.username}</span> ({user.email}) akan{" "}
+          {isDeactivate
+            ? "dinonaktifkan dan semua sesi aktifnya di seluruh perangkat akan langsung diinvalidasi."
+            : "diaktifkan kembali dan dapat login seperti biasa."}
         </p>
-        <p className="mt-2 text-xs text-red-600">
-          Pengguna tidak akan bisa login sampai akun diaktifkan kembali.
-        </p>
+        {isDeactivate && (
+          <p className="mt-2 text-xs text-red-600">
+            Pengguna tidak akan bisa login sampai akun diaktifkan kembali.
+          </p>
+        )}
         <div className="mt-5 flex gap-3">
           <button
             onClick={onClose}
@@ -76,107 +96,115 @@ function DeactivateDialog({ user, onConfirm, onClose }: DeactivateDialogProps) {
           <button
             onClick={handleConfirm}
             disabled={busy}
-            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+            className={cn(
+              "flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-60",
+              isDeactivate ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"
+            )}
           >
             {busy ? (
               <span className="inline-flex items-center justify-center gap-2">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Memproses…
               </span>
-            ) : "Nonaktifkan"}
+            ) : isDeactivate ? "Nonaktifkan" : "Aktifkan"}
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }
 
-/* ─── Role change popover ──────────────────────────────────────────────────── */
+/* ─── Role change modal ────────────────────────────────────────────────────── */
 
-interface RolePopoverProps {
+interface RoleModalProps {
   user: AdminUser;
+  roles: AdminRole[];
   onSave: (role: string) => Promise<void>;
   onClose: () => void;
 }
 
-function RolePopover({ user, onSave, onClose }: RolePopoverProps) {
+function RoleModal({ user, roles, onSave, onClose }: RoleModalProps) {
   const [selected, setSelected] = useState(user.role);
   const [busy, setBusy] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onMouseDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [onClose]);
 
   const handleSave = async () => {
     if (selected === user.role) { onClose(); return; }
     setBusy(true);
-    try {
-      await onSave(selected);
-      onClose();
-    } finally {
-      setBusy(false);
-    }
+    try { await onSave(selected); onClose(); } finally { setBusy(false); }
   };
 
   return (
-    <div
-      ref={ref}
-      className="absolute right-0 top-8 z-20 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
-    >
-      <div className="border-b border-slate-100 px-3 py-2.5">
-        <p className="text-xs font-semibold text-slate-700">Ganti Role</p>
-        <p className="text-[11px] text-slate-400 truncate">{user.username}</p>
-      </div>
-      <div className="p-1">
-        {ALL_ROLES.map((role) => (
+    <ModalBackdrop onClose={onClose}>
+      <div className="w-full max-w-xs rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="border-b border-slate-100 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-800">Ganti Role</p>
+          <p className="text-xs text-slate-400 truncate">{user.displayName || user.username} · {user.email}</p>
+        </div>
+        <div className="p-2 overflow-y-auto max-h-64">
+          {roles.length === 0 ? (
+            <p className="px-4 py-6 text-center text-xs text-slate-400">Tidak ada role tersedia.</p>
+          ) : (
+            roles.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => setSelected(r.name)}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium transition-colors",
+                  selected === r.name
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-700 hover:bg-slate-50"
+                )}
+              >
+                {r.name}
+                {selected === r.name && <Check className="h-4 w-4" />}
+              </button>
+            ))
+          )}
+        </div>
+        <div className="border-t border-slate-100 p-3 flex gap-2">
           <button
-            key={role}
-            onClick={() => setSelected(role)}
-            className={cn(
-              "flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
-              selected === role
-                ? "bg-blue-50 text-blue-700"
-                : "text-slate-700 hover:bg-slate-50"
-            )}
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-slate-200 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            {role}
-            {selected === role && <Check className="h-3.5 w-3.5" />}
+            Batal
           </button>
-        ))}
+          <button
+            onClick={handleSave}
+            disabled={busy || selected === user.role || roles.length === 0}
+            className="flex-1 rounded-xl bg-blue-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+          >
+            {busy ? "Menyimpan…" : "Simpan"}
+          </button>
+        </div>
       </div>
-      <div className="border-t border-slate-100 p-2">
-        <button
-          onClick={handleSave}
-          disabled={busy || selected === user.role}
-          className="w-full rounded-lg bg-blue-600 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-        >
-          {busy ? "Menyimpan…" : "Simpan"}
-        </button>
-      </div>
-    </div>
+    </ModalBackdrop>
   );
 }
 
 /* ─── Page ─────────────────────────────────────────────────────────────────── */
 
 export default function AdminUsersPage() {
-  const [users,          setUsers]          = useState<AdminUser[]>([]);
-  const [loading,        setLoading]        = useState(true);
-  const [search,         setSearch]         = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [roleFilter,     setRoleFilter]     = useState("");
-  const [page,           setPage]           = useState(0);
-  const [totalPages,     setTotalPages]     = useState(1);
-  const [totalElements,  setTotalElements]  = useState(0);
-  const [deactivating,   setDeactivating]   = useState<AdminUser | null>(null);
-  const [roleEditing,    setRoleEditing]    = useState<string | null>(null);
+  const { user: currentUser } = useAuth();
 
-  // Debounce search
+  const [users,           setUsers]           = useState<AdminUser[]>([]);
+  const [roles,           setRoles]           = useState<AdminRole[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [search,          setSearch]          = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [roleFilter,      setRoleFilter]      = useState("");
+  const [page,            setPage]            = useState(0);
+  const [totalPages,      setTotalPages]      = useState(1);
+  const [totalElements,   setTotalElements]   = useState(0);
+  const [statusTarget,    setStatusTarget]    = useState<{ user: AdminUser; action: "activate" | "deactivate" } | null>(null);
+  const [roleEditing,     setRoleEditing]     = useState<AdminUser | null>(null);
+
+  // Fetch available roles once on mount
+  useEffect(() => {
+    adminApi.listRoles().then(setRoles).catch(() => {
+      toast.error("Gagal memuat daftar role.");
+    });
+  }, []);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(t);
@@ -203,15 +231,19 @@ export default function AdminUsersPage() {
   }, [page, debouncedSearch, roleFilter]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
-
-  // Reset ke page 0 saat filter/search berubah
   useEffect(() => { setPage(0); }, [debouncedSearch, roleFilter]);
 
-  const handleDeactivate = async () => {
-    if (!deactivating) return;
-    await adminApi.deactivateUser(deactivating.id);
-    toast.success(`Akun ${deactivating.username} berhasil dinonaktifkan. Semua sesi aktif telah diinvalidasi.`);
-    setDeactivating(null);
+  const handleStatusConfirm = async () => {
+    if (!statusTarget) return;
+    const { user, action } = statusTarget;
+    if (action === "deactivate") {
+      await adminApi.deactivateUser(user.id);
+      toast.success(`Akun ${user.username} berhasil dinonaktifkan.`);
+    } else {
+      await adminApi.activateUser(user.id);
+      toast.success(`Akun ${user.username} berhasil diaktifkan kembali.`);
+    }
+    setStatusTarget(null);
     fetchUsers();
   };
 
@@ -220,6 +252,8 @@ export default function AdminUsersPage() {
     toast.success("Role berhasil diubah.");
     fetchUsers();
   };
+
+  const isSelf = (u: AdminUser) => currentUser?.id === u.id;
 
   return (
     <div className="p-8">
@@ -257,12 +291,10 @@ export default function AdminUsersPage() {
           className="rounded-lg border border-slate-200 py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-blue-400 focus:outline-none"
         >
           <option value="">Semua Role</option>
-          {ALL_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
         </select>
 
-        <span className="text-xs text-slate-400">
-          {totalElements} pengguna
-        </span>
+        <span className="text-xs text-slate-400">{totalElements} pengguna</span>
       </div>
 
       {/* Table */}
@@ -312,6 +344,11 @@ export default function AdminUsersPage() {
                       <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">
                           {u.displayName || u.username}
+                          {isSelf(u) && (
+                            <span className="ml-1.5 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">
+                              Anda
+                            </span>
+                          )}
                         </p>
                         <p className="truncate text-[11px] text-slate-400">{u.email}</p>
                       </div>
@@ -320,9 +357,7 @@ export default function AdminUsersPage() {
 
                   {/* Role */}
                   <td className="px-4 py-3">
-                    <Badge variant={ROLE_VARIANT[u.role] ?? "default"}>
-                      {u.role}
-                    </Badge>
+                    <Badge variant={ROLE_VARIANT[u.role] ?? "default"}>{u.role}</Badge>
                   </td>
 
                   {/* Status */}
@@ -355,32 +390,35 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       {/* Role change */}
-                      <div className="relative">
-                        <button
-                          onClick={() => setRoleEditing(roleEditing === u.id ? null : u.id)}
-                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
-                        >
-                          <UserCog className="h-3.5 w-3.5" />
-                          Role
-                        </button>
-                        {roleEditing === u.id && (
-                          <RolePopover
-                            user={u}
-                            onSave={(role) => handleRoleChange(u.id, role)}
-                            onClose={() => setRoleEditing(null)}
-                          />
-                        )}
-                      </div>
+                      <button
+                        onClick={() => setRoleEditing(u)}
+                        disabled={isSelf(u)}
+                        title={isSelf(u) ? "Tidak dapat mengubah role akun sendiri" : undefined}
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <UserCog className="h-3.5 w-3.5" />
+                        Role
+                      </button>
 
-                      {/* Deactivate */}
-                      {u.active && (
-                        <button
-                          onClick={() => setDeactivating(u)}
-                          className="flex items-center gap-1.5 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-50"
-                        >
-                          <ShieldOff className="h-3.5 w-3.5" />
-                          Nonaktifkan
-                        </button>
+                      {/* Activate / Deactivate — hidden for own account */}
+                      {!isSelf(u) && (
+                        u.active ? (
+                          <button
+                            onClick={() => setStatusTarget({ user: u, action: "deactivate" })}
+                            className="flex items-center gap-1.5 rounded-lg border border-red-100 px-2.5 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-50"
+                          >
+                            <ShieldOff className="h-3.5 w-3.5" />
+                            Nonaktifkan
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setStatusTarget({ user: u, action: "activate" })}
+                            className="flex items-center gap-1.5 rounded-lg border border-emerald-100 px-2.5 py-1.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50"
+                          >
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Aktifkan
+                          </button>
+                        )
                       )}
                     </div>
                   </td>
@@ -416,12 +454,23 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* Deactivate dialog */}
-      {deactivating && (
-        <DeactivateDialog
-          user={deactivating}
-          onConfirm={handleDeactivate}
-          onClose={() => setDeactivating(null)}
+      {/* Status dialog */}
+      {statusTarget && (
+        <StatusDialog
+          user={statusTarget.user}
+          action={statusTarget.action}
+          onConfirm={handleStatusConfirm}
+          onClose={() => setStatusTarget(null)}
+        />
+      )}
+
+      {/* Role modal */}
+      {roleEditing && (
+        <RoleModal
+          user={roleEditing}
+          roles={roles}
+          onSave={(role) => handleRoleChange(roleEditing.id, role)}
+          onClose={() => setRoleEditing(null)}
         />
       )}
     </div>

@@ -63,6 +63,11 @@ export async function deactivateUser(userId: string): Promise<void> {
   await client.post(`/api/admin/users/${userId}/deactivate`);
 }
 
+/** POST /api/admin/users/:id/activate */
+export async function activateUser(userId: string): Promise<void> {
+  await client.post(`/api/admin/users/${userId}/activate`);
+}
+
 /** PUT /api/admin/users/:id/role */
 export async function changeUserRole(
   userId: string,
