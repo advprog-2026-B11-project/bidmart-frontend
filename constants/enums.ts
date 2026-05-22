@@ -22,11 +22,12 @@ export const OrderStatus = {
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
 export const TransactionType = {
-  TOP_UP:       "TOP_UP",
-  BID_HOLD:     "BID_HOLD",
-  BID_REFUND:   "BID_REFUND",
+  TOP_UP:       "TOPUP",
+  BID_HOLD:     "HOLD",
+  BID_REFUND:   "REFUND",
   PAYMENT:      "PAYMENT",
-  PAYOUT:       "PAYOUT",
+  PAYOUT:       "INCOME",
+  WITHDRAWAL:   "WITHDRAWAL",
   COMMISSION:   "COMMISSION",
 } as const;
 export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];

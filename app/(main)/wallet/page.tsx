@@ -63,6 +63,7 @@ const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
   { key: TransactionType.BID_REFUND, label: "Refund" },
   { key: TransactionType.PAYMENT, label: "Pembayaran" },
   { key: TransactionType.PAYOUT, label: "Pendapatan" },
+  { key: TransactionType.WITHDRAWAL, label: "Tarik Dana" },
   { key: TransactionType.COMMISSION, label: "Komisi" },
 ];
 
