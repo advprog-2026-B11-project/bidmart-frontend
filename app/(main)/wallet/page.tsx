@@ -2,13 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  ChevronDown,
-  ChevronUp,
   Filter,
 } from "lucide-react";
 import { AuthGuard } from "@/components/providers/AuthGuard";
@@ -159,22 +155,22 @@ function WalletSkeleton() {
 /* ─── Content ─────────────────────────────────────────────────────────────── */
 
 function WalletContent() {
-  const [wallet,       setWallet]       = useState<Wallet | null>(null);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [txLoading,    setTxLoading]    = useState(false);
-  const [page,         setPage]         = useState(0);
-  const [hasMore,      setHasMore]      = useState(false);
-  const [selectedTx,   setSelectedTx]   = useState<Transaction | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [txLoading, setTxLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   /* Filters */
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("SEMUA");
-  const [dateFrom,   setDateFrom]   = useState("");
-  const [dateTo,     setDateTo]     = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   /* Fetch wallet balance */
   const fetchWallet = useCallback(() => {
-    walletApi.getBalance().then(setWallet).catch(() => {});
+    walletApi.getBalance().then(setWallet).catch(() => { });
   }, []);
 
   /* Fetch transactions — accumulate pages */
@@ -188,7 +184,7 @@ function WalletContent() {
         setHasMore(!res.last);
         setPage(p);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         setLoading(false);
         setTxLoading(false);
@@ -222,165 +218,165 @@ function WalletContent() {
 
   return (
     <div className="min-h-screen bg-white">
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
 
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-800">
-          Dompet
-        </h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Kelola saldo dan riwayat transaksi Anda.
-        </p>
-      </div>
-
-      {/* Hero balance card */}
-      <BalanceCard
-        balance={wallet?.balanceAvailable ?? null}
-        holdBalance={wallet?.balanceLocked}
-        loading={!wallet}
-        className="mb-4"
-      />
-
-      {/* CTA buttons */}
-      <div className="mb-8 grid grid-cols-2 gap-3">
-        <Link
-          href={ROUTES.WALLET_TOP_UP}
-          className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow"
-        >
-          <ArrowDownLeft className="h-4 w-4" />
-          Top Up
-        </Link>
-        <Link
-          href={ROUTES.WALLET_WITHDRAW}
-          className="flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/80 transition-all hover:shadow hover:ring-slate-300"
-        >
-          <ArrowUpRight className="h-4 w-4" />
-          Tarik Dana
-        </Link>
-      </div>
-
-      {/* Quick stats */}
-      <div className="mb-8 grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-            Top Up Bulan Ini
-          </p>
-          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
-            {formatRupiah(stats.topUpTotal)}
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-800">
+            Dompet
+          </h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Kelola saldo dan riwayat transaksi Anda.
           </p>
         </div>
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-            Bid Menang
-          </p>
-          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
-            {stats.paymentCount}x
-          </p>
-          <p className="text-[10px] text-slate-400">bulan ini</p>
-        </div>
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-            Pendapatan
-          </p>
-          <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
-            {formatRupiah(stats.payoutTotal)}
-          </p>
-          <p className="text-[10px] text-slate-400">bulan ini</p>
-        </div>
-      </div>
 
-      {/* Transaction history */}
-      <div>
-        <h2 className="mb-4 font-serif text-xl font-bold text-slate-800">
-          Riwayat Transaksi
-        </h2>
+        {/* Hero balance card */}
+        <BalanceCard
+          balance={wallet?.balanceAvailable ?? null}
+          holdBalance={wallet?.balanceLocked}
+          loading={!wallet}
+          className="mb-4"
+        />
 
-        {/* Filters */}
-        <div className="mb-4 space-y-3">
-          {/* Type pills */}
-          <div className="flex flex-wrap gap-1.5">
-            {TYPE_FILTERS.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setTypeFilter(key)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                  typeFilter === key
-                    ? "border-blue-600 bg-blue-600 text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Date range */}
-          <div className="flex items-center gap-2">
-            <Filter className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            />
-            <span className="text-xs text-slate-400">—</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            />
-            {(dateFrom || dateTo) && (
-              <button
-                onClick={() => { setDateFrom(""); setDateTo(""); }}
-                className="text-xs text-slate-400 hover:text-slate-600"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Ledger */}
-        {filtered.length === 0 ? (
-          <div className="rounded-2xl bg-white py-14 text-center shadow-sm ring-1 ring-slate-100/60">
-            <p className="text-sm text-slate-400">Tidak ada transaksi ditemukan.</p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100/60 divide-y divide-slate-50">
-            {filtered.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} onClick={() => setSelectedTx(tx)} />
-            ))}
-          </div>
-        )}
-
-        {/* Load more */}
-        {hasMore && (
-          <button
-            onClick={() => {
-              setTxLoading(true);
-              fetchTx(page + 1);
-            }}
-            disabled={txLoading}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-medium text-slate-500 shadow-sm ring-1 ring-slate-100/60 transition-all hover:shadow hover:text-slate-700 disabled:opacity-60"
+        {/* CTA buttons */}
+        <div className="mb-8 grid grid-cols-2 gap-3">
+          <Link
+            href={ROUTES.WALLET_TOP_UP}
+            className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow"
           >
-            {txLoading ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-            ) : (
-              "Muat lebih banyak"
-            )}
-          </button>
-        )}
-      </div>
+            <ArrowDownLeft className="h-4 w-4" />
+            Top Up
+          </Link>
+          <Link
+            href={ROUTES.WALLET_WITHDRAW}
+            className="flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/80 transition-all hover:shadow hover:ring-slate-300"
+          >
+            <ArrowUpRight className="h-4 w-4" />
+            Tarik Dana
+          </Link>
+        </div>
 
-      <TransactionDetailModal
-        transaction={selectedTx}
-        isOpen={!!selectedTx}
-        onClose={() => setSelectedTx(null)}
-      />
-    </div>
+        {/* Quick stats */}
+        <div className="mb-8 grid grid-cols-3 gap-3">
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              Top Up Bulan Ini
+            </p>
+            <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
+              {formatRupiah(stats.topUpTotal)}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              Bid Menang
+            </p>
+            <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
+              {stats.paymentCount}x
+            </p>
+            <p className="text-[10px] text-slate-400">bulan ini</p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              Pendapatan
+            </p>
+            <p className="mt-1 font-serif text-base font-bold tabular-nums text-slate-800">
+              {formatRupiah(stats.payoutTotal)}
+            </p>
+            <p className="text-[10px] text-slate-400">bulan ini</p>
+          </div>
+        </div>
+
+        {/* Transaction history */}
+        <div>
+          <h2 className="mb-4 font-serif text-xl font-bold text-slate-800">
+            Riwayat Transaksi
+          </h2>
+
+          {/* Filters */}
+          <div className="mb-4 space-y-3">
+            {/* Type pills */}
+            <div className="flex flex-wrap gap-1.5">
+              {TYPE_FILTERS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setTypeFilter(key)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    typeFilter === key
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Date range */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+              />
+              <span className="text-xs text-slate-400">—</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={() => { setDateFrom(""); setDateTo(""); }}
+                  className="text-xs text-slate-400 hover:text-slate-600"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Ledger */}
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl bg-white py-14 text-center shadow-sm ring-1 ring-slate-100/60">
+              <p className="text-sm text-slate-400">Tidak ada transaksi ditemukan.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100/60 divide-y divide-slate-50">
+              {filtered.map((tx) => (
+                <TransactionRow key={tx.id} tx={tx} onClick={() => setSelectedTx(tx)} />
+              ))}
+            </div>
+          )}
+
+          {/* Load more */}
+          {hasMore && (
+            <button
+              onClick={() => {
+                setTxLoading(true);
+                fetchTx(page + 1);
+              }}
+              disabled={txLoading}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-medium text-slate-500 shadow-sm ring-1 ring-slate-100/60 transition-all hover:shadow hover:text-slate-700 disabled:opacity-60"
+            >
+              {txLoading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+              ) : (
+                "Muat lebih banyak"
+              )}
+            </button>
+          )}
+        </div>
+
+        <TransactionDetailModal
+          transaction={selectedTx}
+          isOpen={!!selectedTx}
+          onClose={() => setSelectedTx(null)}
+        />
+      </div>
     </div>
   );
 }

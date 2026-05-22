@@ -1,7 +1,6 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  BadgeDollarSign,
   CircleDollarSign,
   Lock,
   RotateCcw,
