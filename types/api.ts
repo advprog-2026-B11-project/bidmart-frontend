@@ -7,7 +7,7 @@ export interface LoginRequest {
   password: string;
 }
 
-export type RegisterRole = "USER" | "SELLER";
+export type RegisterRole = "BUYER" | "SELLER";
 
 export interface RegisterRequest {
   username: string;
@@ -66,6 +66,7 @@ export interface UserProfile {
   phoneNumber?: string | null;
   shippingAddress?: string | null;
   mfaEnabled: boolean;
+  isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -324,6 +325,48 @@ export interface NotificationPreferences {
   orderUpdate: boolean;
   paymentSuccess: boolean;
   system: boolean;
+}
+
+/* ─── Admin ──────────────────────────────────────────────────────────────── */
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  imageUrl?: string | null;
+  role: string;
+  active: boolean;
+  mfaEnabled: boolean;
+  createdAt: string;
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface AdminRole {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: Permission[];
+  system?: boolean;
+}
+
+export interface CreateRoleRequest {
+  name: string;
+  description?: string;
+  permissionIds: string[];
+}
+
+export interface UpdateRolePermissionsRequest {
+  permissionIds: string[];
+}
+
+export interface ChangeUserRoleRequest {
+  role: string;
 }
 
 /* ─── Order (extended) ───────────────────────────────────────────────────── */
