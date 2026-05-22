@@ -31,17 +31,33 @@ function sortListings(listings: Listing[], sort: FilterValues["sort"]): Listing[
 }
 
 function filterByStatus(listings: Listing[], status: FilterValues["status"]): Listing[] {
-  if (status === "active") return listings.filter((l) => l.status === AuctionStatus.ACTIVE);
-  if (status === "ended") {
+  if (status === "active") {
     return listings.filter(
-      (l) =>
-        l.status === AuctionStatus.ENDED ||
-        l.status === AuctionStatus.CLOSED ||
-        l.status === AuctionStatus.SOLD ||
-        l.status === AuctionStatus.WON
+      (listing) =>
+        listing.status === AuctionStatus.ACTIVE ||
+        listing.status === AuctionStatus.EXTENDED
     );
   }
+
+  if (status === "ended") {
+    return listings.filter(
+      (listing) =>
+        listing.status === AuctionStatus.CLOSED ||
+        listing.status === AuctionStatus.WON ||
+        isListingStatus(listing, "UNSOLD")
+    );
+  }
+
   return listings;
+}
+
+function parsePrice(value: string): number | undefined {
+  const price = Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : undefined;
+}
+
+function isListingStatus(listing: Listing, status: string): boolean {
+  return listing.status === status;
 }
 
 function parseFiltersFromUrl(sp: URLSearchParams): FilterValues {
@@ -115,8 +131,8 @@ export default function CatalogContent() {
         ? listingsApi.search({
             keyword:  f.keyword  || undefined,
             category: f.category || undefined,
-            minPrice: f.minPrice ? Number(f.minPrice) : undefined,
-            maxPrice: f.maxPrice ? Number(f.maxPrice) : undefined,
+            minPrice: parsePrice(f.minPrice),
+            maxPrice: parsePrice(f.maxPrice),
             page:     nextPage,
             size:     PAGE_SIZE,
           })
@@ -128,7 +144,15 @@ export default function CatalogContent() {
         const items  = res.content ?? [];
         const active = filterByStatus(items, f.status);
         const sorted = sortListings(active, f.sort);
-        setListings((prev) => (append ? [...prev, ...sorted] : sorted));
+        
+        setListings((prev) => {
+          if (!append) return sorted;
+
+          const merged = new Map(prev.map((listing) => [listing.id, listing]));
+          sorted.forEach((listing) => merged.set(listing.id, listing));
+
+          return sortListings(Array.from(merged.values()), f.sort);
+        });
         setHasMore(!res.last);
         setPage(nextPage);
       });
