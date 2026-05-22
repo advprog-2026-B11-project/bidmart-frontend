@@ -15,7 +15,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (user?.id) {
-      orderApi.getOrdersByBuyer(user.id)
+      orderApi.getOrdersByUser(user.id)
         .then(setOrders)
         .catch(console.error)
         .finally(() => setLoading(false));

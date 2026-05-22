@@ -10,7 +10,6 @@ import {
   Menu,
   Package,
   Search,
-  Settings,
   User,
   Wallet as WalletIcon,
   Bell,
@@ -238,7 +237,6 @@ export function Header() {
                           <DropdownItem href={ROUTES.MY_LISTINGS} icon={<ListOrdered className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Listing Saya</DropdownItem>
                         )}
                         <DropdownItem href={ROUTES.WALLET}      icon={<WalletIcon  className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Wallet</DropdownItem>
-                        <DropdownItem href={ROUTES.SETTINGS}    icon={<Settings    className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Pengaturan</DropdownItem>
                       </div>
 
                       <div className="border-t border-slate-100 py-1">
@@ -266,7 +264,7 @@ export function Header() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-300 dark:bg-white dark:text-slate-800 dark:hover:bg-slate-50"
+                  className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
                   onClick={() => router.push(ROUTES.AUTH.LOGIN)}
                 >
                   Masuk
