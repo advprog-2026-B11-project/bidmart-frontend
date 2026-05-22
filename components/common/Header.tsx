@@ -29,6 +29,8 @@ import { WalletPill } from "@/components/features/wallet/WalletPill";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/constants/enums";
 import { ROUTES } from "@/constants/routes";
+import type { Category } from "@/types/api";
+import * as categoriesApi from "@/lib/api/categories";
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -103,10 +105,13 @@ export function Header() {
   const [searchOpen,   setSearchOpen]   = useState(false);
   const [searchQuery,  setSearchQuery]  = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [catOpen,      setCatOpen]      = useState(false);
+  const [categories,   setCategories]   = useState<Category[]>([]);
 
   const closeDrawer = () => setDrawerOpen(false);
 
-  const userMenuRef   = useRef<HTMLDivElement>(null);
+  const userMenuRef    = useRef<HTMLDivElement>(null);
+  const catRef         = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Scroll border
@@ -116,11 +121,18 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Fetch categories once on mount
+  useEffect(() => {
+    categoriesApi.getAll().then(setCategories).catch(() => {});
+  }, []);
+
   // Click-outside for dropdowns
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
         setUserMenuOpen(false);
+      if (catRef.current && !catRef.current.contains(e.target as Node))
+        setCatOpen(false);
     }
     document.addEventListener("mousedown", onMouseDown);
     return () => document.removeEventListener("mousedown", onMouseDown);
