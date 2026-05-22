@@ -2,9 +2,9 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 const variantMap = {
-  default:     "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800",
-  elevated:    "bg-white dark:bg-slate-900 shadow-md dark:shadow-slate-900/60",
-  interactive: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md",
+  default:     "bg-white border border-slate-200",
+  elevated:    "bg-white shadow-md",
+  interactive: "bg-white border border-slate-200 cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md",
 };
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -31,14 +31,14 @@ CardHeader.displayName = "CardHeader";
 
 export const CardTitle = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-lg font-semibold leading-snug text-slate-900 dark:text-slate-50", className)} {...props} />
+    <h3 ref={ref} className={cn("text-lg font-semibold leading-snug text-slate-900", className)} {...props} />
   )
 );
 CardTitle.displayName = "CardTitle";
 
 export const CardDescription = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm text-slate-500 dark:text-slate-400", className)} {...props} />
+    <p ref={ref} className={cn("text-sm text-slate-500", className)} {...props} />
   )
 );
 CardDescription.displayName = "CardDescription";
