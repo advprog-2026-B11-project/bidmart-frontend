@@ -120,33 +120,42 @@ export interface Category {
 
 export interface Listing {
   id: string;
-  sellerId: string;
-  categoryId: string;
   title: string;
   description: string;
-  imageUrl: string | null;
+  imageUrls: string[];
   startingPrice: number;
+  currentPrice: number;
   reservePrice: number | null;
-  endTime: string;
+  buyNowPrice: number | null;
   status: AuctionStatus;
-  auctionType: "ENGLISH";
-  currentHighestBid: number | null;
-  currentHighestBidderId: string | null;
+  categoryId?: string;
+  category?: Category;
+  sellerId?: string;
+  seller?: UserProfile;
+  totalBids: number;
+  currentHighestBidderId?: string;
+  startAt: string;
+  endAt: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateListingRequest {
-  categoryId: string;
   title: string;
   description: string;
-  imageUrl: string;
+  imageUrls: string[];
   startingPrice: number;
   reservePrice?: number;
-  endTime: string;
-  auctionType: "ENGLISH";
+  buyNowPrice?: number;
+  categoryId: string;
+  startAt: string;
+  endAt: string;
 }
 
-export type UpdateListingRequest = CreateListingRequest;
+export interface UpdateListingRequest extends Partial<CreateListingRequest> {
+  status?: AuctionStatus;
+  endTime?: string;
+}
 
 /* ─── Bid ────────────────────────────────────────────────────────────────── */
 
