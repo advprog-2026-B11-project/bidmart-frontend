@@ -205,6 +205,7 @@ function CreateListingContent() {
   }, []);
 
   return (
+    <div className="min-h-screen bg-white">
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Back link */}
       <Link
@@ -293,6 +294,7 @@ function CreateListingContent() {
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 }

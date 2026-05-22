@@ -6,11 +6,6 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import type { Bid } from "@/types/api";
 import * as bidsApi from "@/lib/api/bids";
 
-function maskName(name: string): string {
-  if (!name) return "Anonim";
-  return `${name[0]}${"*".repeat(Math.min(name.length - 1, 4))}`;
-}
-
 interface BidHistoryProps {
   listingId: string;
 }
@@ -62,7 +57,7 @@ export function BidHistory({ listingId }: BidHistoryProps) {
             </span>
             <div>
               <p className="text-sm font-medium text-slate-800">
-                {maskName(bid.bidder?.name ?? "Anonim")}
+                Anonim
               </p>
               <p className="text-[11px] text-slate-400">
                 {formatRelativeTime(bid.createdAt)}

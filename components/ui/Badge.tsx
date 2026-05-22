@@ -2,12 +2,12 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 const variantMap = {
-  default: "bg-slate-100 text-slate-700",
-  success: "bg-green-600 text-white shadow-sm",
-  warning: "bg-yellow-100 text-yellow-700",
-  danger:  "bg-red-100 text-red-700",
-  info:    "bg-blue-100 text-blue-700",
-  accent:  "bg-yellow-200 text-yellow-800",
+  default: "bg-slate-100 text-slate-600",
+  success: "bg-emerald-600 text-white",
+  warning: "bg-amber-500 text-white",
+  danger:  "bg-red-600 text-white",
+  info:    "bg-blue-600 text-white",
+  accent:  "bg-yellow-400 text-yellow-900",
 };
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

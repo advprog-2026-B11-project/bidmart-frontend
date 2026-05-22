@@ -10,7 +10,6 @@ import {
   Menu,
   Package,
   Search,
-  Settings,
   User,
   Wallet as WalletIcon,
   Bell,
@@ -238,7 +237,6 @@ export function Header() {
                           <DropdownItem href={ROUTES.MY_LISTINGS} icon={<ListOrdered className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Listing Saya</DropdownItem>
                         )}
                         <DropdownItem href={ROUTES.WALLET}      icon={<WalletIcon  className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Wallet</DropdownItem>
-                        <DropdownItem href={ROUTES.SETTINGS}    icon={<Settings    className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Pengaturan</DropdownItem>
                       </div>
 
                       <div className="border-t border-slate-100 py-1">
