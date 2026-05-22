@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Geist, Geist_Mono, Sora } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import "./globals.css";
@@ -14,9 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -37,7 +38,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} antialiased`}>
         <AuthProvider>
           {children}
           <Toaster position="top-right" theme="system" richColors closeButton />

@@ -28,7 +28,14 @@ function fallbackCategory(categoryId = ""): Category {
 }
 
 function normalizeListing(raw: BackendListing): Listing {
-  const imageUrls = raw.imageUrls ?? (raw.imageUrl ? [raw.imageUrl] : []);
+  let imageUrls = raw.imageUrls ?? (raw.imageUrl ? [raw.imageUrl] : []);
+  imageUrls = imageUrls.filter((url) => url && !url.includes("example.com"));
+  
+  let mainImageUrl = raw.imageUrl ?? imageUrls[0] ?? null;
+  if (mainImageUrl && mainImageUrl.includes("example.com")) {
+    mainImageUrl = imageUrls[0] ?? null;
+  }
+
   const currentPrice = raw.currentPrice ?? raw.currentHighestBid ?? raw.startingPrice ?? 0;
   const endAt = raw.endAt ?? raw.endTime ?? "";
   const categoryId = raw.categoryId ?? raw.category?.id ?? "";
@@ -40,7 +47,7 @@ function normalizeListing(raw: BackendListing): Listing {
     categoryId,
     title: raw.title ?? "",
     description: raw.description ?? "",
-    imageUrl: raw.imageUrl ?? imageUrls[0] ?? null,
+    imageUrl: mainImageUrl,
     imageUrls,
     startingPrice: raw.startingPrice ?? 0,
     currentPrice,
@@ -70,8 +77,8 @@ function normalizePage(data: PaginatedResponse<BackendListing>): PaginatedRespon
 function toBackendPayload(data: CreateListingRequest | UpdateListingRequest) {
   return {
     ...data,
-    imageUrl: data.imageUrl ?? data.imageUrls?.[0],
-    endTime: data.endTime ?? data.endAt,
+    imageUrl: data.imageUrls?.[0],
+    endTime: (data as UpdateListingRequest).endTime ?? data.endAt,
     imageUrls: undefined,
     startAt: undefined,
     endAt: undefined,
@@ -121,8 +128,15 @@ export async function search(
 
 /** GET /api/listings/:id */
 export async function getById(id: string): Promise<Listing> {
-  const { data } = await client.get<BackendListing>(`/api/listings/${id}`);
-  return normalizeListing(data);
+  const { data } = await client.get<unknown>(`/api/listings/${id}`);
+  if (!data || typeof data !== "object") throw new Error("Invalid response");
+  // Handle backends that wrap single-entity responses under a "data" key
+  const raw =
+    "data" in (data as Record<string, unknown>) &&
+    typeof (data as Record<string, unknown>).data === "object"
+      ? ((data as Record<string, unknown>).data as BackendListing)
+      : (data as BackendListing);
+  return normalizeListing(raw);
 }
 
 /** PATCH /api/listings/:id */

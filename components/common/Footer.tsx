@@ -42,7 +42,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Logo size="md" white />
+            <Logo variant="mark-only" size="md" white />
             <p className="mt-4 text-sm leading-relaxed text-slate-400">
               Platform lelang karya seni &amp; barang koleksi secara real-time.
               Bid kompetitif, integritas terjaga.

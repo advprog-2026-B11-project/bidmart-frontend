@@ -23,6 +23,8 @@ const variantMap = {
     "bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 focus-visible:ring-blue-500 dark:text-slate-200 dark:hover:bg-slate-800",
   danger:
     "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-500",
+  dark:
+    "bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-700 focus-visible:ring-slate-500",
 };
 
 const sizeMap = {

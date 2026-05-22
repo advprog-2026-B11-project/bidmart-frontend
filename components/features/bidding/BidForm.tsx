@@ -119,6 +119,8 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
   const isActive  = listing.status === AuctionStatus.ACTIVE || listing.status === AuctionStatus.EXTENDED;
   const isClosed  = listing.status === AuctionStatus.ENDED
                  || listing.status === AuctionStatus.SOLD
+                 || listing.status === AuctionStatus.CLOSED
+                 || listing.status === AuctionStatus.WON
                  || listing.status === AuctionStatus.CANCELLED;
 
   const minRequired   = minimumBid ?? listing.startingPrice;
@@ -132,7 +134,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
   /* Fetch wallet balance */
   useEffect(() => {
     if (!isAuthenticated) return;
-    walletApi.getBalance().then((w) => setBalance(w.balance)).catch(() => {});
+    walletApi.getBalance().then((w) => setBalance(w.balanceAvailable)).catch(() => {});
   }, [isAuthenticated]);
 
   /* Quick increment */
@@ -205,7 +207,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
         setProxyBid(false);
         setProxyMax("");
         onBidSuccess?.();
-        walletApi.getBalance().then((w) => setBalance(w.balance)).catch(() => {});
+        walletApi.getBalance().then((w) => setBalance(w.balanceAvailable)).catch(() => {});
       }
 
       setSubmitting(false);

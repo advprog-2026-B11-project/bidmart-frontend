@@ -169,11 +169,12 @@ function CreateListingContent() {
   const buildPayload = useCallback(() => ({
     title: formData.title.trim(),
     description: formData.description.trim(),
-    imageUrl: formData.imageUrl,
+    imageUrls: formData.imageUrl ? [formData.imageUrl] : [],
     categoryId: formData.categoryId,
     startingPrice: parseInt(formData.startingPrice, 10),
     ...(formData.reservePrice ? { reservePrice: parseInt(formData.reservePrice, 10) } : {}),
-    endTime: new Date(formData.endTime).toISOString(),
+    startAt: new Date().toISOString(),
+    endAt: formData.endTime,
   }), [formData]);
 
   const handlePublish = useCallback(async () => {
