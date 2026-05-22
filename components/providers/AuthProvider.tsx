@@ -41,7 +41,7 @@ interface AuthContextValue {
     email: string,
     displayName: string,
     password: string,
-    role: "USER" | "SELLER"
+    role: "BUYER" | "SELLER"
   ) => Promise<void>;
   refetchUser: () => Promise<void>;
 }
@@ -195,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: string,
       displayName: string,
       password: string,
-      role: "USER" | "SELLER"
+      role: "BUYER" | "SELLER"
     ): Promise<void> => {
       await authApi.register({ username, email, displayName, password, role });
     },

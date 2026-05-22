@@ -30,7 +30,7 @@ const registerSchema = z
       .string()
       .min(1, "Nama tampilan wajib diisi")
       .max(100, "Maksimal 100 karakter"),
-    role: z.enum(["USER", "SELLER"] as const, {
+    role: z.enum(["BUYER", "SELLER"] as const, {
       message: "Role wajib dipilih",
     }),
     password: z.string().min(8, "Password minimal 8 karakter"),
@@ -88,7 +88,7 @@ function RegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { role: "USER" },
+    defaultValues: { role: "BUYER" },
   });
 
   const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
@@ -193,7 +193,7 @@ function RegisterForm() {
               )}
               {...register("role")}
             >
-              <option value="USER">Pembeli</option>
+              <option value="BUYER">Pembeli</option>
               <option value="SELLER">Penjual</option>
             </select>
             {errors.role && (

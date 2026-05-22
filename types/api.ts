@@ -7,7 +7,7 @@ export interface LoginRequest {
   password: string;
 }
 
-export type RegisterRole = "USER" | "SELLER";
+export type RegisterRole = "BUYER" | "SELLER";
 
 export interface RegisterRequest {
   username: string;
