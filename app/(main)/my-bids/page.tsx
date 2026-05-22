@@ -51,12 +51,12 @@ function deriveBidStatus(bid: Bid, userId: string): BidStatus {
 
 const statusDisplay: Record<
   BidStatus,
-  { label: string; variant: "success" | "warning" | "danger" | "default" }
+  { label: string; variant: "success" | "warning" | "danger" | "info" | "default" }
 > = {
-  aktif:  { label: "Tertinggi", variant: "success" },
-  menang: { label: "Menang 🏆", variant: "success" },
-  kalah:  { label: "Dikalahkan", variant: "danger" },
-  tutup:  { label: "Ditutup",   variant: "default" },
+  aktif:  { label: "Tertinggi",  variant: "info"    },
+  menang: { label: "Menang",     variant: "success" },
+  kalah:  { label: "Dikalahkan", variant: "danger"  },
+  tutup:  { label: "Ditutup",    variant: "default" },
 };
 
 async function attachFreshListings(bids: Bid[]): Promise<Bid[]> {
@@ -96,13 +96,13 @@ const TABS: { key: FilterTab; label: string }[] = [
 
 function BidRowSkeleton() {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
-      <Skeleton className="h-16 w-16 shrink-0 rounded-lg" />
+    <div className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm">
+      <Skeleton className="h-14 w-14 shrink-0 rounded-xl" />
       <div className="flex-1 space-y-2">
-        <Skeleton className="h-4 w-3/4 rounded" />
-        <Skeleton className="h-3 w-1/2 rounded" />
+        <Skeleton className="h-3.5 w-2/3 rounded" />
+        <Skeleton className="h-3 w-1/3 rounded" />
       </div>
-      <Skeleton className="h-6 w-20 rounded-full" />
+      <Skeleton className="h-5 w-20 rounded-full" />
     </div>
   );
 }
@@ -112,10 +112,10 @@ function BidRowSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 shadow-inner">
         <Gavel className="h-8 w-8 text-slate-300" />
       </div>
-      <h3 className="font-serif text-lg font-semibold text-slate-700">
+      <h3 className="font-serif text-lg font-semibold text-slate-600">
         Belum ada penawaran
       </h3>
       <p className="mt-1 max-w-xs text-sm text-slate-400">
@@ -123,7 +123,7 @@ function EmptyState() {
       </p>
       <Link
         href="/catalog"
-        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
+        className="mt-6 inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow"
       >
         <Gavel className="h-4 w-4" />
         Jelajahi Lelang
@@ -147,42 +147,42 @@ function BidRow({ bid, bidStatus }: BidRowProps) {
   return (
     <Link
       href={listing ? `/catalog/${listing.id}` : "#"}
-      className="group flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 transition-shadow hover:border-slate-200 hover:shadow-sm"
+      className="group flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/60 transition-all hover:shadow-md hover:ring-slate-200/80"
     >
       {/* Thumbnail */}
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-slate-50">
         {thumb ? (
           <Image
             src={thumb}
             alt={listing?.title ?? "Karya"}
             fill
-            sizes="64px"
+            sizes="56px"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <Gavel className="h-6 w-6 text-slate-300" />
+            <Gavel className="h-5 w-5 text-slate-300" />
           </div>
         )}
         {bidStatus === "menang" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20">
-            <Trophy className="h-5 w-5 text-emerald-600" />
+          <div className="absolute inset-0 flex items-center justify-center bg-emerald-400/20">
+            <Trophy className="h-4 w-4 text-emerald-500" />
           </div>
         )}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">
+        <p className="truncate text-sm font-semibold text-slate-800">
           {listing?.title ?? `Listing #${bid.listingId}`}
         </p>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-0.5 text-xs text-slate-400">
           Bid Anda:{" "}
-          <span className="font-semibold tabular-nums text-slate-700">
+          <span className="font-semibold tabular-nums text-slate-600">
             {formatRupiah(bid.amount)}
           </span>
         </p>
-        <p className="mt-0.5 text-[11px] text-slate-400">
+        <p className="mt-0.5 text-[11px] text-slate-300">
           {formatRelativeTime(bid.createdAt)}
         </p>
       </div>
@@ -256,72 +256,73 @@ function MyBidsContent() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-900">
-          Penawaran Saya
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Riwayat semua penawaran yang pernah Anda pasang.
-        </p>
-      </div>
-
-      {/* Filter tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              "flex-1 rounded-lg py-2 text-sm font-medium transition-all duration-150",
-              tab === key
-                ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
-                : "text-slate-500 hover:text-slate-700"
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => <BidRowSkeleton key={i} />)}
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-800">
+            Penawaran Saya
+          </h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Riwayat semua penawaran yang pernah Anda pasang.
+          </p>
         </div>
-      ) : error ? (
-        <div className="py-16 text-center">
-          <p className="text-sm text-slate-500">Gagal memuat data penawaran.</p>
-          <button
-            onClick={() => { setLoading(true); setError(false); doFetch(); }}
-            className="mt-3 text-sm font-medium text-blue-600 hover:underline"
-          >
-            Coba lagi
-          </button>
-        </div>
-      ) : filtered.length === 0 ? (
-        bids.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="py-16 text-center">
-            <p className="text-sm text-slate-400">
-              Tidak ada penawaran dengan status ini.
-            </p>
-          </div>
-        )
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((bid) => (
-            <BidRow
-              key={bid.id}
-              bid={bid}
-              bidStatus={user ? deriveBidStatus(bid, user.id) : "tutup"}
-            />
+
+        {/* Filter tabs */}
+        <div className="mb-6 flex gap-1 rounded-2xl bg-slate-100/70 p-1">
+          {TABS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                "flex-1 rounded-xl py-2 text-sm font-medium transition-all duration-150",
+                tab === key
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              {label}
+            </button>
           ))}
-
         </div>
-      )}
+
+        {/* Content */}
+        {loading ? (
+          <div className="space-y-2.5">
+            {[...Array(5)].map((_, i) => <BidRowSkeleton key={i} />)}
+          </div>
+        ) : error ? (
+          <div className="py-16 text-center">
+            <p className="text-sm text-slate-400">Gagal memuat data penawaran.</p>
+            <button
+              onClick={() => { setLoading(true); setError(false); doFetch(); }}
+              className="mt-3 text-sm font-medium text-blue-500 hover:underline"
+            >
+              Coba lagi
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
+          bids.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="py-16 text-center">
+              <p className="text-sm text-slate-400">
+                Tidak ada penawaran dengan status ini.
+              </p>
+            </div>
+          )
+        ) : (
+          <div className="space-y-2.5">
+            {filtered.map((bid) => (
+              <BidRow
+                key={bid.id}
+                bid={bid}
+                bidStatus={user ? deriveBidStatus(bid, user.id) : "tutup"}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

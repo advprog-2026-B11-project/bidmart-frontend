@@ -57,7 +57,7 @@ function PriceInput({ label, value, onChange, error, helper, required, placehold
           placeholder={placeholder ?? "0"}
           disabled={disabled}
           className={cn(
-            "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums",
+            "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-900 font-medium tabular-nums",
             "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
             "transition-colors placeholder:text-slate-300",
             "disabled:cursor-not-allowed disabled:opacity-60",
@@ -176,7 +176,7 @@ export function ListingFormStep2({ data, onChange, errors, disabled }: Props) {
             onChange("endTimePreset", "custom");
           }}
           className={cn(
-            "w-full rounded-lg border bg-slate-50 px-4 py-2.5 text-sm",
+            "w-full rounded-lg border bg-slate-50 px-4 py-2.5 text-sm text-slate-900",
             "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
             "transition-colors disabled:cursor-not-allowed disabled:opacity-60",
             errors.endTime ? "border-red-400" : "border-slate-200"
