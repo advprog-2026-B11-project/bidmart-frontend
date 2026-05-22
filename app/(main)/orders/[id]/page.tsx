@@ -1,580 +1,164 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Check,
-  CheckCircle,
-  Clock,
-  Package,
-  Truck,
-  X,
-} from "lucide-react";
-import { toast } from "sonner";
-import { AuthGuard } from "@/components/providers/AuthGuard";
-import { Avatar } from "@/components/ui/Avatar";
-import { Badge } from "@/components/ui/Badge";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { cn, formatDateTime, formatRupiah } from "@/lib/utils";
-import { OrderStatus } from "@/constants/enums";
-import { ROUTES } from "@/constants/routes";
-import { ApiError } from "@/lib/api/client";
-import * as ordersApi from "@/lib/api/orders";
-import type { Order } from "@/types/api";
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { orderApi, Order } from '@/lib/api/orders';
+import { useAuth } from '@/hooks/useAuth';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Spinner } from '@/components/ui/Spinner';
 
-/* ─── Status config ───────────────────────────────────────────────────────── */
-
-const STATUS_CONFIG: Record<string, {
-  label: string;
-  variant: "success" | "warning" | "danger" | "info" | "default";
-}> = {
-  PENDING:   { label: "Menunggu Pembayaran", variant: "warning"  },
-  PAID:      { label: "Dibayar",             variant: "info"     },
-  SHIPPED:   { label: "Dikirim",             variant: "info"     },
-  DELIVERED: { label: "Diterima",            variant: "success"  },
-  COMPLETED: { label: "Selesai",             variant: "success"  },
-  CANCELLED: { label: "Dibatalkan",          variant: "danger"   },
-  REFUNDED:  { label: "Dikembalikan",        variant: "default"  },
-};
-
-/* ─── Timeline ────────────────────────────────────────────────────────────── */
-
-interface TimelineStep {
-  label: string;
-  sublabel?: string;
-  done: boolean;
-  active: boolean;
-  icon: React.ReactNode;
-}
-
-function buildTimeline(order: Order): TimelineStep[] {
-  const s = order.status;
-  const isCancelled = s === OrderStatus.CANCELLED || s === OrderStatus.REFUNDED;
-
-  if (isCancelled) {
-    return [
-      {
-        label: "Pesanan Dibuat",
-        sublabel: formatDateTime(order.createdAt),
-        done: true,
-        active: false,
-        icon: <CheckCircle className="h-4 w-4" />,
-      },
-      {
-        label: "Dibatalkan",
-        sublabel: STATUS_CONFIG[s]?.label,
-        done: true,
-        active: true,
-        icon: <X className="h-4 w-4" />,
-      },
-    ];
-  }
-
-  const paidDone      = s !== OrderStatus.PENDING;
-  const shippedDone   = s === OrderStatus.SHIPPED || s === OrderStatus.DELIVERED || s === OrderStatus.COMPLETED;
-  const deliveredDone = s === OrderStatus.DELIVERED || s === OrderStatus.COMPLETED;
-
-  return [
-    {
-      label: "Pesanan Dibuat",
-      sublabel: formatDateTime(order.createdAt),
-      done: true,
-      active: false,
-      icon: <Package className="h-4 w-4" />,
-    },
-    {
-      label: "Pembayaran Dikonfirmasi",
-      sublabel: order.paidAt ? formatDateTime(order.paidAt) : undefined,
-      done: paidDone,
-      active: !paidDone,
-      icon: <CheckCircle className="h-4 w-4" />,
-    },
-    {
-      label: "Barang Dikirim",
-      sublabel: order.shippedAt ? formatDateTime(order.shippedAt) : undefined,
-      done: shippedDone,
-      active: paidDone && !shippedDone,
-      icon: <Truck className="h-4 w-4" />,
-    },
-    {
-      label: "Barang Diterima",
-      sublabel: order.deliveredAt ? formatDateTime(order.deliveredAt) : undefined,
-      done: deliveredDone,
-      active: shippedDone && !deliveredDone,
-      icon: <Check className="h-4 w-4" />,
-    },
-  ];
-}
-
-function OrderTimeline({ order }: { order: Order }) {
-  const steps = buildTimeline(order);
-  const isCancelled = order.status === OrderStatus.CANCELLED || order.status === OrderStatus.REFUNDED;
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <p className="mb-5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        Status Pesanan
-      </p>
-      <div className="relative">
-        {/* Vertical connector */}
-        <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-slate-200" />
-
-        <div className="space-y-6">
-          {steps.map((step, i) => (
-            <div key={i} className="relative flex items-start gap-4">
-              {/* Dot */}
-              <div className={cn(
-                "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-2 ring-white transition-all",
-                step.done && !step.active && !isCancelled && "bg-blue-600 text-white",
-                step.active && !isCancelled && "bg-blue-600 text-white animate-pulse",
-                step.active && isCancelled && "bg-red-500 text-white",
-                step.done && step.active && isCancelled && "bg-red-500 text-white",
-                !step.done && "bg-slate-100 text-slate-400",
-              )}>
-                {step.icon}
-              </div>
-
-              {/* Text */}
-              <div className="pt-1">
-                <p className={cn(
-                  "text-sm font-semibold",
-                  step.done ? "text-slate-900" : "text-slate-400"
-                )}>
-                  {step.label}
-                </p>
-                {step.sublabel && (
-                  <p className="mt-0.5 text-xs text-slate-400">{step.sublabel}</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Confirm dialog ──────────────────────────────────────────────────────── */
-
-interface ConfirmDialogProps {
-  title: string;
-  description: string;
-  confirmLabel: string;
-  confirmClass?: string;
-  onConfirm: () => void;
-  onClose: () => void;
-}
-
-function ConfirmDialog({ title, description, confirmLabel, confirmClass, onConfirm, onClose }: ConfirmDialogProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm scale-100 rounded-2xl bg-white p-6 shadow-2xl animate-scale-in">
-        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-        <p className="mt-2 text-sm text-slate-500">{description}</p>
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-          >
-            Batal
-          </button>
-          <button
-            onClick={onConfirm}
-            className={cn(
-              "flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors",
-              confirmClass ?? "bg-blue-700 hover:bg-blue-800"
-            )}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Dispute form ────────────────────────────────────────────────────────── */
-
-interface DisputeDialogProps {
-  onSubmit: (reason: string, description: string) => Promise<void>;
-  onClose: () => void;
-  submitting: boolean;
-}
-
-const DISPUTE_REASONS = [
-  "Barang tidak sesuai deskripsi",
-  "Barang tidak diterima",
-  "Barang rusak saat tiba",
-  "Penipu / penipuan",
-  "Lainnya",
-];
-
-function DisputeDialog({ onSubmit, onClose, submitting }: DisputeDialogProps) {
-  const [reason,      setReason]      = useState(DISPUTE_REASONS[0]);
-  const [description, setDescription] = useState("");
-  const error = description.trim().length > 0 && description.trim().length < 20
-    ? "Deskripsi minimal 20 karakter."
-    : "";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md scale-100 rounded-2xl bg-white p-6 shadow-2xl animate-scale-in">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-            <AlertTriangle className="h-5 w-5 text-red-500" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-slate-900">Ajukan Sengketa</h3>
-            <p className="text-xs text-slate-500">Tim BidMart akan meninjau dalam 1×24 jam</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-              Alasan sengketa
-            </label>
-            <select
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              {DISPUTE_REASONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-              Penjelasan detail{" "}
-              <span className="text-slate-400 font-normal">(min. 20 karakter)</span>
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              placeholder="Jelaskan masalah yang Anda hadapi secara rinci…"
-              className={cn(
-                "w-full resize-none rounded-xl border px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500/20",
-                error ? "border-red-300 focus:border-red-500" : "border-slate-200 focus:border-blue-500"
-              )}
-            />
-            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-          </div>
-        </div>
-
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-          >
-            Batal
-          </button>
-          <button
-            onClick={() => {
-              if (description.trim().length < 20) return;
-              onSubmit(reason, description.trim());
-            }}
-            disabled={submitting || description.trim().length < 20}
-            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting ? "Mengirim…" : "Kirim Sengketa"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Skeleton ────────────────────────────────────────────────────────────── */
-
-function DetailSkeleton() {
-  return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8 space-y-6">
-      <Skeleton className="h-5 w-36 rounded" />
-      <Skeleton className="h-8 w-48 rounded" />
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
-        {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full rounded-lg" />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Order detail content ────────────────────────────────────────────────── */
-
-function OrderDetailContent() {
-  const params = useParams();
-  const id = params.id as string;
-
-  const [order,     setOrder]     = useState<Order | null>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [notFound,  setNotFound]  = useState(false);
-  const [showConfirm,  setShowConfirm]  = useState(false);
-  const [showDispute,  setShowDispute]  = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+export default function OrderDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { user } = useAuth();
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [trackingInput, setTrackingInput] = useState<string>('');
+  const [disputeInput, setDisputeInput] = useState<string>('');
+  const [showDisputeForm, setShowDisputeForm] = useState<boolean>(false);
 
   useEffect(() => {
-    ordersApi
-      .getById(id)
-      .then(setOrder)
-      .catch((err) => {
-        const status = err instanceof ApiError ? err.status : 0;
-        if (status === 404) setNotFound(true);
-        else toast.error("Gagal memuat detail pesanan.");
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  const handleConfirm = useCallback(async () => {
-    if (!order) return;
-    setActionLoading(true);
-    try {
-      const updated = await ordersApi.confirm(order.id);
-      setOrder(updated);
-      setShowConfirm(false);
-      toast.success("Penerimaan barang dikonfirmasi!");
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Gagal konfirmasi.";
-      toast.error(msg);
-    } finally {
-      setActionLoading(false);
+    if (id && user?.id) {
+      orderApi.getOrdersByUser(user.id)
+        .then((res) => {
+          const found = res.find((o) => o.id === id);
+          if (found) setOrder(found);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
-  }, [order]);
+  }, [id, user]);
 
-  const handleDispute = useCallback(async (reason: string, description: string) => {
-    if (!order) return;
-    setActionLoading(true);
+  const handleUpdateTracking = async () => {
+    if (!order || !user || !trackingInput) return;
     try {
-      const updated = await ordersApi.dispute(order.id, { reason, description });
+      const updated = await orderApi.updateTrackingNumber(order.id, user.id, trackingInput);
       setOrder(updated);
-      setShowDispute(false);
-      toast.success("Sengketa berhasil diajukan. Tim kami akan meninjau dalam 1×24 jam.");
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Gagal mengajukan sengketa.";
-      toast.error(msg);
-    } finally {
-      setActionLoading(false);
+    } catch (error) {
+      console.error(error);
     }
-  }, [order]);
+  };
 
-  if (loading) return <DetailSkeleton />;
+  const handleConfirmDelivery = async () => {
+    if (!order || !user) return;
+    try {
+      const updated = await orderApi.confirmDelivery(order.id, user.id);
+      setOrder(updated);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  if (notFound) {
+  const handleDisputeOrder = async () => {
+    if (!order || !user || !disputeInput) return;
+    try {
+      const updated = await orderApi.disputeOrder(order.id, user.id, disputeInput);
+      setOrder(updated);
+      setShowDisputeForm(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6">
-        <p className="text-lg font-semibold text-slate-700">Pesanan tidak ditemukan.</p>
-        <Link
-          href={ROUTES.ORDERS}
-          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Kembali ke Pesanan
-        </Link>
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <Spinner />
       </div>
     );
   }
 
-  if (!order) return null;
+  if (!order) {
+    return <div className="p-6 text-center">Data transaksi tidak ditemukan.</div>;
+  }
 
-  const statusConf = STATUS_CONFIG[order.status] ?? { label: order.status, variant: "default" as const };
-  const isShipped  = order.status === OrderStatus.SHIPPED;
-  const isDone     = order.status === OrderStatus.DELIVERED || order.status === OrderStatus.COMPLETED;
+  const isBuyer = user?.id === order.buyerId;
+  const isSeller = user?.id === order.sellerId;
 
   return (
-    <>
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8 space-y-6">
-        {/* Back */}
-        <Link
-          href={ROUTES.ORDERS}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-slate-700"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Kembali ke Pesanan
-        </Link>
+    <div className="max-w-2xl mx-auto p-6">
+      <Button variant="outline" onClick={() => router.push('/orders')} className="mb-4">
+        Kembali ke Daftar Pesanan
+      </Button>
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+      <Card className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="font-serif text-2xl font-bold tracking-tight text-slate-900">
-              Detail Pesanan
-            </h1>
-            <p className="mt-1 font-mono text-sm text-slate-400">
-              #{order.id.slice(0, 8).toUpperCase()}
-            </p>
+            <h2 className="text-xl font-bold">Detail Pesanan</h2>
+            <p className="text-xs text-gray-400">ID: {order.id}</p>
           </div>
-          <Badge variant={statusConf.variant} className="shrink-0 text-sm px-3 py-1">
-            {statusConf.label}
+          <Badge variant={
+            order.status === 'DELIVERED' ? 'success' :
+            order.status === 'SHIPPED' ? 'info' :
+            order.status === 'DISPUTED' ? 'danger' : 'default'
+          }>
+            {order.status}
           </Badge>
         </div>
 
-        {/* Timeline */}
-        <OrderTimeline order={order} />
-
-        {/* Listing card */}
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="px-5 pt-5 pb-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Item Lelang
-            </p>
-            <Link
-              href={ROUTES.LISTING_DETAIL(order.listing.id)}
-              className="flex items-start gap-4 transition-opacity hover:opacity-80"
-            >
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
-                {order.listing.imageUrls[0] ? (
-                  <Image
-                    src={order.listing.imageUrls[0]}
-                    alt={order.listing.title}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <Package className="h-6 w-6 text-slate-300" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-slate-900">{order.listing.title}</p>
-                <p className="mt-0.5 text-xs text-slate-400">{order.listing.category.name}</p>
-              </div>
-            </Link>
+        <div className="border-t border-b py-4 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-500">Total Pembayaran:</span>
+            <span className="font-bold">Rp {order.amount.toLocaleString('id-ID')}</span>
           </div>
-
-          <div className="border-t border-slate-100 px-5 py-4 space-y-2">
-            <InfoRow label="Harga akhir" value={
-              <span className="font-bold text-blue-700">{formatRupiah(order.finalPrice)}</span>
-            } />
-            {order.paymentMethod && (
-              <InfoRow label="Metode pembayaran" value={order.paymentMethod} />
-            )}
-            <InfoRow label="Tanggal order" value={formatDateTime(order.createdAt)} />
-            {order.trackingNumber && (
-              <InfoRow
-                label="Nomor resi"
-                value={
-                  <span className="font-mono font-medium text-slate-800">{order.trackingNumber}</span>
-                }
-              />
-            )}
+          <div className="flex justify-between">
+            <span className="text-gray-500">Nomor Resi:</span>
+            <span className="font-mono">{order.trackingNumber || 'Belum dimasukkan'}</span>
           </div>
-        </div>
-
-        {/* Seller info */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Penjual</p>
-          <div className="flex items-center gap-3">
-            <Avatar name={order.seller.name} src={order.seller.avatarUrl ?? undefined} size="sm" />
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{order.seller.name}</p>
-              <p className="text-xs text-slate-400">{order.seller.email}</p>
+          {order.disputeReason && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700">
+              <p className="font-semibold">Alasan Sengketa:</p>
+              <p>{order.disputeReason}</p>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Shipping address */}
-        {order.shippingAddress && (
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Alamat Pengiriman
-            </p>
-            <p className="text-sm font-semibold text-slate-900">{order.shippingAddress.recipientName}</p>
-            <p className="mt-0.5 text-sm text-slate-600">
-              {order.shippingAddress.street}, {order.shippingAddress.city},{" "}
-              {order.shippingAddress.province} {order.shippingAddress.postalCode}
-            </p>
-            <p className="text-sm text-slate-400">{order.shippingAddress.phone}</p>
-          </div>
-        )}
+        <div className="space-y-4">
+          {isSeller && order.status === 'CREATED' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Input Nomor Resi Pengiriman</label>
+              <div className="flex gap-2">
+                <Input
+                  value={trackingInput}
+                  onChange={(e) => setTrackingInput(e.target.value)}
+                  placeholder="Masukkan nomor resi..."
+                />
+                <Button onClick={handleUpdateTracking}>Kirim Resi</Button>
+              </div>
+            </div>
+          )}
 
-        {/* Actions */}
-        {isShipped && (
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              onClick={() => setShowConfirm(true)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-700 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
-            >
-              <Check className="h-4 w-4" />
-              Konfirmasi Diterima
-            </button>
-            <button
-              onClick={() => setShowDispute(true)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
-            >
-              <AlertTriangle className="h-4 w-4" />
-              Ajukan Sengketa
-            </button>
-          </div>
-        )}
+          {isBuyer && order.status === 'SHIPPED' && (
+            <div className="flex gap-4">
+              <Button onClick={handleConfirmDelivery} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                Konfirmasi Barang Diterima
+              </Button>
+              <Button onClick={() => setShowDisputeForm(!showDisputeForm)} variant="danger">
+                Ajukan Komplain (Dispute)
+              </Button>
+            </div>
+          )}
 
-        {isDone && (
-          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <CheckCircle className="h-5 w-5 shrink-0 text-emerald-500" />
-            <p className="text-sm text-emerald-800">
-              Pesanan selesai. Terima kasih sudah berbelanja di BidMart!
-            </p>
-          </div>
-        )}
-
-        {(order.status === OrderStatus.PENDING || order.status === OrderStatus.PAID) && (
-          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <Clock className="h-5 w-5 shrink-0 text-amber-500" />
-            <p className="text-sm text-amber-800">
-              Menunggu seller memproses pengiriman. Anda akan mendapat notifikasi saat paket dikirim.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Dialogs */}
-      {showConfirm && (
-        <ConfirmDialog
-          title="Konfirmasi Penerimaan"
-          description="Apakah Anda sudah menerima barang dalam kondisi baik? Tindakan ini tidak dapat dibatalkan."
-          confirmLabel={actionLoading ? "Memproses…" : "Ya, Konfirmasi"}
-          onConfirm={handleConfirm}
-          onClose={() => setShowConfirm(false)}
-        />
-      )}
-      {showDispute && (
-        <DisputeDialog
-          onSubmit={handleDispute}
-          onClose={() => setShowDispute(false)}
-          submitting={actionLoading}
-        />
-      )}
-    </>
-  );
-}
-
-/* ─── Helper: info row ────────────────────────────────────────────────────── */
-
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 text-sm">
-      <span className="text-slate-500 shrink-0">{label}</span>
-      <span className="text-right text-slate-900">{value}</span>
+          {showDisputeForm && (
+            <div className="p-4 border rounded space-y-3 bg-gray-50">
+              <label className="text-sm font-medium">Alasan Pengajuan Sengketa</label>
+              <Textarea
+                value={disputeInput}
+                onChange={(e) => setDisputeInput(e.target.value)}
+                placeholder="Tuliskan detail keluhan atau ketidaksesuaian barang di sini..."
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowDisputeForm(false)}>Batal</Button>
+                <Button variant="danger" onClick={handleDisputeOrder}>Kirim Laporan</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
-  );
-}
-
-/* ─── Page ────────────────────────────────────────────────────────────────── */
-
-export default function OrderDetailPage() {
-  return (
-    <AuthGuard mode="auth-required">
-      <OrderDetailContent />
-    </AuthGuard>
   );
 }

@@ -82,8 +82,8 @@ export interface Session {
 export interface Wallet {
   id: string;
   userId: string;
-  balance: number;
-  holdBalance: number;
+  balanceAvailable: number;
+  balanceLocked: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -129,8 +129,10 @@ export interface Listing {
   reservePrice: number | null;
   buyNowPrice: number | null;
   status: AuctionStatus;
-  category: Category;
-  seller: UserProfile;
+  categoryId?: string;
+  category?: Category;
+  sellerId?: string;
+  seller?: UserProfile;
   totalBids: number;
   currentHighestBidderId?: string;
   startAt: string;
@@ -153,6 +155,7 @@ export interface CreateListingRequest {
 
 export interface UpdateListingRequest extends Partial<CreateListingRequest> {
   status?: AuctionStatus;
+  endTime?: string;
 }
 
 /* ─── Bid ────────────────────────────────────────────────────────────────── */

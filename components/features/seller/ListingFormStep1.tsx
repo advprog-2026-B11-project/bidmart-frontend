@@ -53,7 +53,7 @@ export function ListingFormStep1({ data, categories, onChange, errors, disabled 
           disabled={disabled}
           placeholder="Masukkan judul karya Anda"
           className={cn(
-            "w-full rounded-lg border bg-slate-50 px-4 py-2.5 text-sm",
+            "w-full rounded-lg border bg-slate-50 px-4 py-2.5 text-sm text-slate-900",
             "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
             "transition-colors placeholder:text-slate-300",
             "disabled:cursor-not-allowed disabled:opacity-60",
@@ -75,7 +75,7 @@ export function ListingFormStep1({ data, categories, onChange, errors, disabled 
           disabled={disabled}
           placeholder="Ceritakan tentang karya Anda — teknik, inspirasi, ukuran, material..."
           className={cn(
-            "w-full rounded-lg border bg-slate-50 px-4 py-3 text-sm leading-relaxed",
+            "w-full rounded-lg border bg-slate-50 px-4 py-3 text-sm text-slate-900 leading-relaxed",
             "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
             "resize-y transition-colors placeholder:text-slate-300 border-slate-200",
             "disabled:cursor-not-allowed disabled:opacity-60"
@@ -94,7 +94,7 @@ export function ListingFormStep1({ data, categories, onChange, errors, disabled 
             onChange={(e) => onChange("categoryId", e.target.value)}
             disabled={disabled}
             className={cn(
-              "w-full appearance-none rounded-lg border bg-slate-50 py-2.5 pl-4 pr-9 text-sm",
+              "w-full appearance-none rounded-lg border bg-slate-50 py-2.5 pl-4 pr-9 text-sm text-slate-900",
               "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
               "transition-colors disabled:cursor-not-allowed disabled:opacity-60",
               errors.categoryId ? "border-red-400" : "border-slate-200",
@@ -156,7 +156,7 @@ export function ListingFormStep1({ data, categories, onChange, errors, disabled 
           disabled={disabled}
           placeholder="https://example.com/image.jpg"
           className={cn(
-            "w-full rounded-lg border bg-slate-50 px-4 py-2.5 text-sm font-mono",
+            "w-full rounded-lg border bg-slate-50 px-4 py-2.5 text-sm text-slate-900 font-mono",
             "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
             "transition-colors placeholder:text-slate-300",
             "disabled:cursor-not-allowed disabled:opacity-60",

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { ListingCard, ListingCardSkeleton } from "@/components/features/listings/ListingCard";
 import {
@@ -15,6 +15,32 @@ import * as listingsApi from "@/lib/api/listings";
 import type { Listing } from "@/types/api";
 
 const PAGE_SIZE = 12;
+
+/* ─── Dummy preview listing ─────────────────────────────────────────────── */
+
+const DUMMY_LISTING: Listing = {
+  id: "preview-dummy",
+  title: "Lukisan Abstrak — Karya Original Seniman Lokal",
+  description: "Ini adalah contoh tampilan kartu karya lelang di BidMart.",
+  imageUrls: [
+    "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&q=80",
+  ],
+  startingPrice: 1_500_000,
+  currentPrice: 2_750_000,
+  reservePrice: null,
+  buyNowPrice: null,
+  status: AuctionStatus.ACTIVE,
+  categoryId: "cat-1",
+  category: { id: "cat-1", name: "Seni Lukis", slug: "seni-lukis", description: null, imageUrl: null },
+  sellerId: "seller-1",
+  totalBids: 7,
+  startAt: "2026-01-01T00:00:00Z",
+  endAt: "2026-12-31T23:59:00Z",
+  createdAt: "2026-01-01T00:00:00Z",
+  updatedAt: "2026-01-01T00:00:00Z",
+};
+
+/* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 function sortListings(listings: Listing[], sort: FilterValues["sort"]): Listing[] {
   const copy = [...listings];
@@ -30,7 +56,15 @@ function sortListings(listings: Listing[], sort: FilterValues["sort"]): Listing[
 
 function filterByStatus(listings: Listing[], status: FilterValues["status"]): Listing[] {
   if (status === "active") return listings.filter((l) => l.status === AuctionStatus.ACTIVE);
-  if (status === "ended")  return listings.filter((l) => l.status === AuctionStatus.ENDED || l.status === AuctionStatus.SOLD);
+  if (status === "ended") {
+    return listings.filter(
+      (l) =>
+        l.status === AuctionStatus.ENDED ||
+        l.status === AuctionStatus.CLOSED ||
+        l.status === AuctionStatus.SOLD ||
+        l.status === AuctionStatus.WON
+    );
+  }
   return listings;
 }
 
@@ -45,21 +79,21 @@ function parseFiltersFromUrl(sp: URLSearchParams): FilterValues {
   };
 }
 
-/* ─── Empty State ─────────────────────────────────────────────────────────── */
+/* ─── Empty State ────────────────────────────────────────────────────────── */
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="flex flex-col items-center py-20 text-center">
-      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
-        <Search className="h-8 w-8 text-slate-300" />
+    <div className="flex flex-col items-center py-24 text-center">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+        <Search className="h-7 w-7 text-slate-300" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-800">Tidak ada karya yang cocok</h3>
+      <h3 className="text-base font-semibold text-slate-800">Tidak ada karya yang cocok</h3>
       <p className="mt-2 max-w-xs text-sm text-slate-400">
-        Coba ubah kata kunci atau hapus beberapa filter untuk melihat lebih banyak karya.
+        Coba ubah kata kunci atau hapus beberapa filter.
       </p>
       <button
         onClick={onReset}
-        className="mt-5 flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+        className="mt-5 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
       >
         <X className="h-3.5 w-3.5" />
         Hapus semua filter
@@ -68,7 +102,7 @@ function EmptyState({ onReset }: { onReset: () => void }) {
   );
 }
 
-/* ─── Main Content ────────────────────────────────────────────────────────── */
+/* ─── Main Content ───────────────────────────────────────────────────────── */
 
 export default function CatalogContent() {
   const searchParams = useSearchParams();
@@ -82,7 +116,6 @@ export default function CatalogContent() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [drawerOpen, setDrawerOpen]   = useState(false);
 
-  /* Push current filter state to URL */
   const pushUrl = useCallback(
     (next: FilterValues) => {
       const sp = new URLSearchParams();
@@ -98,7 +131,6 @@ export default function CatalogContent() {
     [router]
   );
 
-  /* Fetch listings (stable — receives filters as args so no closure deps) */
   const doFetch = useCallback(
     (f: FilterValues, nextPage: number, append: boolean): Promise<void> => {
       const hasSearchFilters = !!f.keyword || !!f.category || !!f.minPrice || !!f.maxPrice;
@@ -128,16 +160,10 @@ export default function CatalogContent() {
     []
   );
 
-  /* Initial fetch — mount only, no setState in effect body */
   useEffect(() => {
     doFetch(filters, 0, false).finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /*
-   * Filter changes are handled entirely in event handlers (setState in effects
-   * is forbidden by react-hooks/set-state-in-effect). setLoading + doFetch are
-   * called from handleChange / handleReset, which are user-triggered.
-   */
   const handleChange = useCallback(
     (next: Partial<FilterValues>) => {
       const updated = { ...filters, ...next };
@@ -145,7 +171,6 @@ export default function CatalogContent() {
       pushUrl(updated);
 
       if ("sort" in next) {
-        // Sort-only: re-order already-fetched results, no network request
         setListings((prev) => sortListings(prev, updated.sort));
         return;
       }
@@ -173,107 +198,108 @@ export default function CatalogContent() {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
 
-      {/* Page header */}
-      <div className="mb-8">
-        <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-blue-600">
-          Semua karya
-        </p>
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          Katalog Lelang
-        </h1>
-        <nav className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
-          <Link href="/" className="hover:text-slate-600">Beranda</Link>
-          <ArrowRight className="h-3 w-3" />
-          <span className="text-slate-600">Katalog</span>
-        </nav>
-      </div>
-
-      <div className="flex gap-8">
-
-        {/* ── Desktop sidebar ─────────────────────────────────────────────── */}
-        <div className="hidden w-56 shrink-0 lg:block">
-          <div className="sticky top-24">
-            <ListingFilters
-              values={filters}
-              onChange={handleChange}
-              onReset={handleReset}
-            />
-          </div>
+        {/* ── Page header ────────────────────────────────────────────── */}
+        <div className="mb-10">
+          <nav className="mb-3 flex items-center gap-1.5 text-xs text-slate-400">
+            <Link href="/" className="transition-colors hover:text-slate-600">Beranda</Link>
+            <span>/</span>
+            <span className="text-slate-600">Katalog</span>
+          </nav>
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-blue-600">
+            Semua karya
+          </p>
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            Katalog Lelang
+          </h1>
         </div>
 
-        {/* ── Main column ─────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0">
+        <div className="flex gap-8">
 
-          {/* Mobile filter button + result count row */}
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">
-              {loading
-                ? "Memuat…"
-                : `Menampilkan ${listings.length} karya`}
-            </p>
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 lg:hidden"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filter
-            </button>
-          </div>
-
-          {/* Grid */}
-          {loading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <ListingCardSkeleton key={i} />
-              ))}
+          {/* ── Desktop sidebar ──────────────────────────────────────── */}
+          <aside className="hidden w-56 shrink-0 lg:block">
+            <div className="sticky top-24 rounded-2xl border border-slate-100 bg-slate-50 p-5">
+              <ListingFilters
+                values={filters}
+                onChange={handleChange}
+                onReset={handleReset}
+              />
             </div>
-          ) : listings.length === 0 ? (
-            <EmptyState onReset={handleReset} />
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                {listings.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
-                ))}
-                {loadingMore &&
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <ListingCardSkeleton key={`more-${i}`} />
-                  ))}
-              </div>
+          </aside>
 
-              {hasMore && !loadingMore && (
-                <div className="mt-8 flex justify-center">
-                  <button
-                    onClick={handleLoadMore}
-                    className="rounded-lg border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                  >
-                    Muat lebih banyak
-                  </button>
+          {/* ── Main column ──────────────────────────────────────────── */}
+          <div className="min-w-0 flex-1">
+
+            {/* Top bar: result count + mobile filter trigger */}
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <p className="text-sm text-slate-500">
+                {loading ? "Memuat…" : `${listings.length} karya ditemukan`}
+              </p>
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 lg:hidden"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Filter
+              </button>
+            </div>
+
+            {/* Grid */}
+            {loading ? (
+              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <ListingCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : listings.length === 0 ? (
+              <EmptyState onReset={handleReset} />
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+                  {/* Dummy preview card — always first */}
+                  <ListingCard listing={DUMMY_LISTING} preview />
+
+                  {listings.map((l) => (
+                    <ListingCard key={l.id} listing={l} />
+                  ))}
+
+                  {loadingMore &&
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <ListingCardSkeleton key={`more-${i}`} />
+                    ))}
                 </div>
-              )}
-            </>
-          )}
+
+                {hasMore && !loadingMore && (
+                  <div className="mt-10 flex justify-center">
+                    <button
+                      onClick={handleLoadMore}
+                      className="rounded-xl border border-slate-200 bg-white px-8 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                    >
+                      Muat lebih banyak
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Mobile filter drawer ─────────────────────────────────────────── */}
+      {/* ── Mobile filter drawer ──────────────────────────────────────── */}
       {drawerOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 animate-fade-in"
             onClick={closeDrawer}
           />
-
-          {/* Panel */}
           <div className="absolute bottom-0 left-0 right-0 max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-white px-5 pb-8 pt-4 animate-slide-up">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-900">Filter &amp; Urutan</h2>
               <button
                 onClick={closeDrawer}
-                className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100"
+                className="rounded-full p-1.5 text-slate-500 transition-colors hover:bg-slate-100"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -285,9 +311,9 @@ export default function CatalogContent() {
             />
             <button
               onClick={closeDrawer}
-              className="mt-6 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 w-full rounded-xl bg-blue-700 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-800"
             >
-              Terapkan
+              Terapkan Filter
             </button>
           </div>
         </div>

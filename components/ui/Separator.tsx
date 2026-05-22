@@ -14,7 +14,7 @@ export const Separator = forwardRef<HTMLDivElement, SeparatorProps>(
       role="separator"
       aria-orientation={orientation}
       className={cn(
-        "shrink-0 bg-slate-200 dark:bg-slate-800",
+        "shrink-0 bg-slate-200",
         orientation === "horizontal" ? "h-px w-full" : "h-full w-px",
         className
       )}

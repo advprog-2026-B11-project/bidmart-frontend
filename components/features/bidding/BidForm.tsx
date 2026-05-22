@@ -115,10 +115,12 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Derived */
-  const isSeller  = !!user && user.id === listing.seller.id;
+  const isSeller  = !!user && user.id === listing.sellerId;
   const isActive  = listing.status === AuctionStatus.ACTIVE || listing.status === AuctionStatus.EXTENDED;
   const isClosed  = listing.status === AuctionStatus.ENDED
                  || listing.status === AuctionStatus.SOLD
+                 || listing.status === AuctionStatus.CLOSED
+                 || listing.status === AuctionStatus.WON
                  || listing.status === AuctionStatus.CANCELLED;
 
   const minRequired   = minimumBid ?? listing.startingPrice;
@@ -132,7 +134,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
   /* Fetch wallet balance */
   useEffect(() => {
     if (!isAuthenticated) return;
-    walletApi.getBalance().then((w) => setBalance(w.balance)).catch(() => {});
+    walletApi.getBalance().then((w) => setBalance(w.balanceAvailable)).catch(() => {});
   }, [isAuthenticated]);
 
   /* Quick increment */
@@ -205,7 +207,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
         setProxyBid(false);
         setProxyMax("");
         onBidSuccess?.();
-        walletApi.getBalance().then((w) => setBalance(w.balance)).catch(() => {});
+        walletApi.getBalance().then((w) => setBalance(w.balanceAvailable)).catch(() => {});
       }
 
       setSubmitting(false);
@@ -293,7 +295,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
               step={1000}
               required
               className={cn(
-                "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums",
+                "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                 "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
                 "transition-all duration-150",
                 flashAmount && "scale-[1.015] border-yellow-400 bg-yellow-50 ring-2 ring-yellow-300/40",
@@ -350,7 +352,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
                 min={numAmount || minRequired}
                 step={1000}
                 className={cn(
-                  "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums",
+                  "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                   "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
                   "transition-colors duration-150",
                   proxyError ? "border-red-400" : "border-slate-200"

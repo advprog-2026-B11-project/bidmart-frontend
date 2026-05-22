@@ -10,7 +10,7 @@ import { ListingFormStep1 } from "@/components/features/seller/ListingFormStep1"
 import { ListingFormStep2 } from "@/components/features/seller/ListingFormStep2";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
-import { AuctionStatus } from "@/constants/enums";
+import { AuctionStatus, UserRole } from "@/constants/enums";
 import { ROUTES } from "@/constants/routes";
 import { ApiError } from "@/lib/api/client";
 import * as listingsApi from "@/lib/api/listings";
@@ -31,7 +31,7 @@ function listingToFormData(l: Listing): ListingFormData {
   return {
     title: l.title,
     description: l.description,
-    categoryId: l.category.id,
+    categoryId: l.category?.id || l.categoryId || "",
     imageUrl: l.imageUrls[0] ?? "",
     startingPrice: String(l.startingPrice),
     reservePrice: l.reservePrice ? String(l.reservePrice) : "",
@@ -138,11 +138,11 @@ function EditListingContent() {
       await listingsApi.update(id, {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        imageUrls: [formData.imageUrl],
+        imageUrls: formData.imageUrl ? [formData.imageUrl] : [],
         categoryId: formData.categoryId,
         startingPrice: parseInt(formData.startingPrice, 10),
         ...(formData.reservePrice ? { reservePrice: parseInt(formData.reservePrice, 10) } : {}),
-        endAt: new Date(formData.endTime).toISOString(),
+        endTime: formData.endTime,
       });
 
       setSaved(true);
@@ -280,7 +280,7 @@ function EditListingContent() {
 
 export default function EditListingPage() {
   return (
-    <AuthGuard mode="auth-required">
+    <AuthGuard mode="role" allowedRoles={[UserRole.SELLER, UserRole.ADMIN]}>
       <EditListingContent />
     </AuthGuard>
   );

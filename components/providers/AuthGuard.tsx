@@ -32,7 +32,7 @@ export function AuthGuard({ children, mode, allowedRoles }: AuthGuardProps) {
     } else if (mode === "guest-only" && isAuthenticated) {
       router.replace("/");
     } else if (isRoleBlocked) {
-      toast.error("Anda tidak memiliki akses ke halaman ini");
+      toast.error("Anda tidak memiliki akses ke halaman ini", { id: "role-blocked-error" });
       router.replace("/");
     }
   }, [isLoading, isAuthenticated, mode, isRoleBlocked, router]);
