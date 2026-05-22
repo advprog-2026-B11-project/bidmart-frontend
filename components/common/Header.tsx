@@ -4,12 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ChevronDown,
   Hammer,
+  LayoutDashboard,
   ListOrdered,
   LogOut,
   Menu,
   Package,
   Search,
+  Settings,
+  ShieldCheck,
   User,
   Wallet as WalletIcon,
   Bell,
@@ -25,6 +29,8 @@ import { WalletPill } from "@/components/features/wallet/WalletPill";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/constants/enums";
 import { ROUTES } from "@/constants/routes";
+import type { Category } from "@/types/api";
+import * as categoriesApi from "@/lib/api/categories";
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -99,10 +105,13 @@ export function Header() {
   const [searchOpen,   setSearchOpen]   = useState(false);
   const [searchQuery,  setSearchQuery]  = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [catOpen,      setCatOpen]      = useState(false);
+  const [categories,   setCategories]   = useState<Category[]>([]);
 
   const closeDrawer = () => setDrawerOpen(false);
 
-  const userMenuRef   = useRef<HTMLDivElement>(null);
+  const userMenuRef    = useRef<HTMLDivElement>(null);
+  const catRef         = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Scroll border
@@ -112,11 +121,18 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Fetch categories once on mount
+  useEffect(() => {
+    categoriesApi.getAll().then(setCategories).catch(() => {});
+  }, []);
+
   // Click-outside for dropdowns
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
         setUserMenuOpen(false);
+      if (catRef.current && !catRef.current.contains(e.target as Node))
+        setCatOpen(false);
     }
     document.addEventListener("mousedown", onMouseDown);
     return () => document.removeEventListener("mousedown", onMouseDown);
@@ -137,6 +153,7 @@ export function Header() {
   };
 
   const isSeller = user?.role === UserRole.SELLER || user?.role === UserRole.ADMIN;
+  const isAdmin  = user?.role === UserRole.ADMIN;
 
   return (
     <>
@@ -158,6 +175,65 @@ export function Header() {
           <nav className="hidden flex-1 items-center justify-center gap-0.5 md:flex">
             <NavItem href={ROUTES.HOME}>Beranda</NavItem>
             <NavItem href={ROUTES.CATALOG}>Katalog</NavItem>
+
+            {/* Kategori dropdown */}
+            <div ref={catRef} className="relative">
+              <button
+                onClick={() => setCatOpen((v) => !v)}
+                className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              >
+                Kategori
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform duration-200",
+                    catOpen && "rotate-180"
+                  )}
+                />
+              </button>
+
+              {catOpen && (
+                <div className="absolute left-0 top-11 z-50 min-w-45 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-scale-in">
+                  {categories.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-slate-400">Memuat…</p>
+                  ) : (
+                    <>
+                      {categories.slice(0, 8).map((cat) => (
+                        <Link
+                          key={cat.id}
+                          href={`${ROUTES.CATALOG}?category=${cat.id}`}
+                          onClick={() => setCatOpen(false)}
+                          className="block px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-blue-700"
+                        >
+                          {cat.name}
+                        </Link>
+                      ))}
+                      <div className="my-1 border-t border-slate-100" />
+                      <Link
+                        href={ROUTES.CATALOG}
+                        onClick={() => setCatOpen(false)}
+                        className="block px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                      >
+                        Lihat semua →
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <NavItem href="/how-it-works">Cara Kerja</NavItem>
+
+            {/* Admin panel shortcut — only visible when logged in as ADMIN */}
+            {isAdmin && (
+              <Link
+                href={ROUTES.ADMIN.USERS}
+                className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Admin Panel
+              </Link>
+            )}
+
             {!isLoading && isAuthenticated && !isSeller && (
               <NavItem href={ROUTES.MY_BIDS}>Bid Saya</NavItem>
             )}
@@ -237,6 +313,10 @@ export function Header() {
                           <DropdownItem href={ROUTES.MY_LISTINGS} icon={<ListOrdered className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Listing Saya</DropdownItem>
                         )}
                         <DropdownItem href={ROUTES.WALLET}      icon={<WalletIcon  className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Wallet</DropdownItem>
+                        <DropdownItem href={ROUTES.SETTINGS}    icon={<Settings    className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Pengaturan</DropdownItem>
+                        {isAdmin && (
+                          <DropdownItem href={ROUTES.ADMIN.USERS} icon={<LayoutDashboard className="h-4 w-4" />} onClick={() => setUserMenuOpen(false)}>Admin Panel</DropdownItem>
+                        )}
                       </div>
 
                       <div className="border-t border-slate-100 py-1">
@@ -359,6 +439,16 @@ export function Header() {
                     {isSeller && <DrawerLink href={ROUTES.MY_LISTINGS} onNavigate={closeDrawer}>Listing Saya</DrawerLink>}
                     <DrawerLink href={ROUTES.WALLET}       onNavigate={closeDrawer}>Wallet</DrawerLink>
                     <DrawerLink href={ROUTES.SETTINGS}     onNavigate={closeDrawer}>Pengaturan</DrawerLink>
+                    {isAdmin && (
+                      <Link
+                        href={ROUTES.ADMIN.USERS}
+                        onClick={closeDrawer}
+                        className="flex items-center gap-2.5 rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                      >
+                        <ShieldCheck className="h-4 w-4" />
+                        Admin Panel
+                      </Link>
+                    )}
                   </nav>
 
                   <div className="mt-4 border-t border-slate-100 pt-4">

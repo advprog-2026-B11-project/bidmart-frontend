@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
+import { UserRole } from "@/constants/enums";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -41,9 +42,9 @@ function VerifyMfaForm({ tempToken }: { tempToken: string }) {
       submitLock.current = true;
       setIsSubmitting(true);
       try {
-        await verifyMfa(tempToken, code);
+        const role = await verifyMfa(tempToken, code);
         toast.success("Verifikasi berhasil!");
-        router.push(ROUTES.HOME);
+        router.push(role === UserRole.ADMIN ? ROUTES.ADMIN.USERS : ROUTES.HOME);
       } catch (err) {
         const msg = err instanceof ApiError ? err.message : "Kode tidak valid. Coba lagi.";
         toast.error(msg);
