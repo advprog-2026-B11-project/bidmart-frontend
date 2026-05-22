@@ -42,7 +42,9 @@ const STATUS_CONFIG: Record<string, {
   EXTENDED:  { label: "Diperpanjang", variant: "warning" },
   DRAFT:     { label: "Draft",        variant: "default" },
   ENDED:     { label: "Berakhir",     variant: "default" },
+  CLOSED:    { label: "Berakhir",     variant: "default" },
   SOLD:      { label: "Terjual",      variant: "info"    },
+  WON:       { label: "Terjual",      variant: "info"    },
   CANCELLED: { label: "Dibatalkan",   variant: "danger"  },
 };
 
@@ -50,7 +52,15 @@ function tabMatch(l: Listing, tab: ListingTab): boolean {
   const s = l.status;
   if (tab === "aktif")   return s === AuctionStatus.ACTIVE || s === AuctionStatus.EXTENDED;
   if (tab === "draft")   return s === AuctionStatus.DRAFT;
-  if (tab === "selesai") return s === AuctionStatus.ENDED || s === AuctionStatus.SOLD || s === AuctionStatus.CANCELLED;
+  if (tab === "selesai") {
+    return (
+      s === AuctionStatus.ENDED ||
+      s === AuctionStatus.CLOSED ||
+      s === AuctionStatus.SOLD ||
+      s === AuctionStatus.WON ||
+      s === AuctionStatus.CANCELLED
+    );
+  }
   return true;
 }
 
@@ -309,7 +319,14 @@ function MyListingsContent() {
   const counts: Record<ListingTab, number> = {
     aktif:   owned.filter((l) => l.status === AuctionStatus.ACTIVE || l.status === AuctionStatus.EXTENDED).length,
     draft:   owned.filter((l) => l.status === AuctionStatus.DRAFT).length,
-    selesai: owned.filter((l) => l.status === AuctionStatus.ENDED || l.status === AuctionStatus.SOLD || l.status === AuctionStatus.CANCELLED).length,
+    selesai: owned.filter(
+      (l) =>
+        l.status === AuctionStatus.ENDED ||
+        l.status === AuctionStatus.CLOSED ||
+        l.status === AuctionStatus.SOLD ||
+        l.status === AuctionStatus.WON ||
+        l.status === AuctionStatus.CANCELLED
+    ).length,
   };
 
   return (

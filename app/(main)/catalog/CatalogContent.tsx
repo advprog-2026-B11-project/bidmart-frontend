@@ -56,7 +56,15 @@ function sortListings(listings: Listing[], sort: FilterValues["sort"]): Listing[
 
 function filterByStatus(listings: Listing[], status: FilterValues["status"]): Listing[] {
   if (status === "active") return listings.filter((l) => l.status === AuctionStatus.ACTIVE);
-  if (status === "ended")  return listings.filter((l) => l.status === AuctionStatus.ENDED || l.status === AuctionStatus.SOLD);
+  if (status === "ended") {
+    return listings.filter(
+      (l) =>
+        l.status === AuctionStatus.ENDED ||
+        l.status === AuctionStatus.CLOSED ||
+        l.status === AuctionStatus.SOLD ||
+        l.status === AuctionStatus.WON
+    );
+  }
   return listings;
 }
 
