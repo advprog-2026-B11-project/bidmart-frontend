@@ -214,44 +214,50 @@ function ListingRow({ listing, onDelete }: ListingRowProps) {
   const highestBid = listing.totalBids > 0 ? listing.currentPrice : null;
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 transition-shadow hover:border-slate-200 hover:shadow-sm">
-      {/* Thumbnail */}
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
-        {thumb ? (
-          <Image src={thumb} alt={listing.title} fill sizes="64px" className="object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <Package className="h-6 w-6 text-slate-300" />
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">{listing.title}</p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-          {highestBid !== null ? (
-            <p className="text-xs text-slate-500">
-              Bid tertinggi:{" "}
-              <span className="font-semibold tabular-nums text-blue-700">
-                {formatRupiah(highestBid)}
-              </span>
-            </p>
+    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
+      {/* Clickable area: thumbnail + info + badge */}
+      <Link
+        href={ROUTES.LISTING_DETAIL(listing.id)}
+        className="flex min-w-0 flex-1 items-center gap-4"
+      >
+        {/* Thumbnail */}
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+          {thumb ? (
+            <Image src={thumb} alt={listing.title} fill sizes="64px" className="object-cover transition-transform duration-300 hover:scale-105" />
           ) : (
-            <p className="text-xs text-slate-400">Belum ada penawaran</p>
-          )}
-          {isActive && (
-            <CountdownTimer endTime={listing.endAt} />
+            <div className="flex h-full items-center justify-center">
+              <Package className="h-6 w-6 text-slate-300" />
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Status badge */}
-      <Badge variant={statusConf.variant} className="shrink-0">
-        {statusConf.label}
-      </Badge>
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">{listing.title}</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            {highestBid !== null ? (
+              <p className="text-xs text-slate-500">
+                Bid tertinggi:{" "}
+                <span className="font-semibold tabular-nums text-blue-700">
+                  {formatRupiah(highestBid)}
+                </span>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400">Belum ada penawaran</p>
+            )}
+            {isActive && (
+              <CountdownTimer endTime={listing.endAt} />
+            )}
+          </div>
+        </div>
 
-      {/* Action menu */}
+        {/* Status badge */}
+        <Badge variant={statusConf.variant} className="shrink-0">
+          {statusConf.label}
+        </Badge>
+      </Link>
+
+      {/* Action menu — outside Link so it doesn't trigger navigation */}
       <ActionMenu listing={listing} onDelete={onDelete} />
     </div>
   );
@@ -313,6 +319,7 @@ function MyListingsContent() {
   };
 
   return (
+    <div className="min-h-screen bg-white">
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8 flex items-start justify-between gap-4">
@@ -392,6 +399,7 @@ function MyListingsContent() {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

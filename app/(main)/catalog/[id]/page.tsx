@@ -91,7 +91,7 @@ export default function ListingDetailPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyKey,  setHistoryKey]  = useState(0);
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* ── Fetch listing + minimum bid ── */
@@ -364,7 +364,7 @@ export default function ListingDetailPage() {
                 </button>
                 {historyOpen && (
                   <div className="border-t border-slate-100 px-4 pb-4 pt-3">
-                    <BidHistory key={historyKey} listingId={listing.id} />
+                    <BidHistory key={historyKey} listingId={listing.id} currentUserId={user?.id} />
                   </div>
                 )}
               </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
+  Banknote,
   Gavel,
   Info,
   TrendingUp,
@@ -132,7 +133,10 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
   /* Fetch wallet balance */
   useEffect(() => {
     if (!isAuthenticated) return;
-    walletApi.getBalance().then((w) => setBalance(w.balance)).catch(() => {});
+    walletApi.getBalance().then((w) => {
+      const b = typeof w.balanceAvailable === "number" && !isNaN(w.balanceAvailable) ? w.balanceAvailable : null;
+      setBalance(b);
+    }).catch(() => {});
   }, [isAuthenticated]);
 
   /* Quick increment */
@@ -205,7 +209,10 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
         setProxyBid(false);
         setProxyMax("");
         onBidSuccess?.();
-        walletApi.getBalance().then((w) => setBalance(w.balance)).catch(() => {});
+        walletApi.getBalance().then((w) => {
+          const b = typeof w.balanceAvailable === "number" && !isNaN(w.balanceAvailable) ? w.balanceAvailable : null;
+          setBalance(b);
+        }).catch(() => {});
       }
 
       setSubmitting(false);
@@ -293,7 +300,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
               step={1000}
               required
               className={cn(
-                "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums",
+                "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                 "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
                 "transition-all duration-150",
                 flashAmount && "scale-[1.015] border-yellow-400 bg-yellow-50 ring-2 ring-yellow-300/40",
@@ -350,7 +357,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
                 min={numAmount || minRequired}
                 step={1000}
                 className={cn(
-                  "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums",
+                  "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                   "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
                   "transition-colors duration-150",
                   proxyError ? "border-red-400" : "border-slate-200"
@@ -377,7 +384,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
         )}
 
         {/* Balance display */}
-        {balance !== null && !lowBalance && (
+        {typeof balance === "number" && !isNaN(balance) && !lowBalance && (
           <p className="flex items-center gap-1 text-xs text-slate-400">
             <Wallet className="h-3.5 w-3.5" />
             Saldo tersedia:{" "}
@@ -403,7 +410,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
             </>
           ) : (
             <>
-              <Gavel className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
               Pasang Penawaran
             </>
           )}

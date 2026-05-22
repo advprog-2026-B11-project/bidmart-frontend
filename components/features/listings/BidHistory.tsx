@@ -6,16 +6,20 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import type { Bid } from "@/types/api";
 import * as bidsApi from "@/lib/api/bids";
 
-function maskName(name: string): string {
-  if (!name) return "Anonim";
-  return `${name[0]}${"*".repeat(Math.min(name.length - 1, 4))}`;
+function maskBidder(bidder: { name?: string | null; email?: string } | undefined | null): string {
+  if (!bidder) return "Anonim";
+  const rawName = bidder.name?.trim();
+  const raw = rawName && rawName !== "Anonim" ? rawName : (bidder.email?.split("@")[0] ?? "");
+  if (!raw) return "Anonim";
+  return `${raw[0].toUpperCase()}${"*".repeat(Math.min(raw.length - 1, 4))}`;
 }
 
 interface BidHistoryProps {
   listingId: string;
+  currentUserId?: string;
 }
 
-export function BidHistory({ listingId }: BidHistoryProps) {
+export function BidHistory({ listingId, currentUserId }: BidHistoryProps) {
   const [bids, setBids]           = useState<Bid[]>([]);
   const [loading, setLoading]     = useState(true);
 
@@ -62,7 +66,9 @@ export function BidHistory({ listingId }: BidHistoryProps) {
             </span>
             <div>
               <p className="text-sm font-medium text-slate-800">
-                {maskName(bid.bidder?.name ?? "Anonim")}
+                {bid.bidder?.id === currentUserId
+                  ? "Anda"
+                  : maskBidder(bid.bidder)}
               </p>
               <p className="text-[11px] text-slate-400">
                 {formatRelativeTime(bid.createdAt)}
