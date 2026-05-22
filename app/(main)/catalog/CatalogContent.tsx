@@ -16,30 +16,6 @@ import type { Listing } from "@/types/api";
 
 const PAGE_SIZE = 12;
 
-/* ─── Dummy preview listing ─────────────────────────────────────────────── */
-
-const DUMMY_LISTING: Listing = {
-  id: "preview-dummy",
-  title: "Lukisan Abstrak — Karya Original Seniman Lokal",
-  description: "Ini adalah contoh tampilan kartu karya lelang di BidMart.",
-  imageUrls: [
-    "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&q=80",
-  ],
-  startingPrice: 1_500_000,
-  currentPrice: 2_750_000,
-  reservePrice: null,
-  buyNowPrice: null,
-  status: AuctionStatus.ACTIVE,
-  categoryId: "cat-1",
-  category: { id: "cat-1", name: "Seni Lukis", slug: "seni-lukis", description: null, imageUrl: null },
-  sellerId: "seller-1",
-  totalBids: 7,
-  startAt: "2026-01-01T00:00:00Z",
-  endAt: "2026-12-31T23:59:00Z",
-  createdAt: "2026-01-01T00:00:00Z",
-  updatedAt: "2026-01-01T00:00:00Z",
-};
-
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 function sortListings(listings: Listing[], sort: FilterValues["sort"]): Listing[] {
@@ -258,13 +234,9 @@ export default function CatalogContent() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
-                  {/* Dummy preview card — always first */}
-                  <ListingCard listing={DUMMY_LISTING} preview />
-
                   {listings.map((l) => (
                     <ListingCard key={l.id} listing={l} />
                   ))}
-
                   {loadingMore &&
                     Array.from({ length: 3 }).map((_, i) => (
                       <ListingCardSkeleton key={`more-${i}`} />
