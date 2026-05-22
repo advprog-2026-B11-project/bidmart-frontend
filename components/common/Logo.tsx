@@ -55,9 +55,9 @@ export function Logo({ variant = "full", size = "md", className, white = false }
   );
 
   const wordmark = (
-    <span className={cn(textClass[size], white ? "text-white" : "text-slate-900 dark:text-white")}>
-      Bid
-      <span className={white ? "text-yellow-300" : "text-blue-700 dark:text-blue-400"}>Mart</span>
+    <span className={cn(textClass[size])}>
+      <span className={white ? "text-white" : "text-black"}>Bid</span>
+      <span className={white ? "text-yellow-300" : "text-blue-600"}>Mart</span>
     </span>
   );
 

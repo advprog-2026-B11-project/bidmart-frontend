@@ -121,8 +121,15 @@ export async function search(
 
 /** GET /api/listings/:id */
 export async function getById(id: string): Promise<Listing> {
-  const { data } = await client.get<BackendListing>(`/api/listings/${id}`);
-  return normalizeListing(data);
+  const { data } = await client.get<unknown>(`/api/listings/${id}`);
+  if (!data || typeof data !== "object") throw new Error("Invalid response");
+  // Handle backends that wrap single-entity responses under a "data" key
+  const raw =
+    "data" in (data as Record<string, unknown>) &&
+    typeof (data as Record<string, unknown>).data === "object"
+      ? ((data as Record<string, unknown>).data as BackendListing)
+      : (data as BackendListing);
+  return normalizeListing(raw);
 }
 
 /** PATCH /api/listings/:id */
