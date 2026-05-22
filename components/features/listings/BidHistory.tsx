@@ -17,33 +17,19 @@ interface BidHistoryProps {
 
 export function BidHistory({ listingId }: BidHistoryProps) {
   const [bids, setBids]           = useState<Bid[]>([]);
-  const [page, setPage]           = useState(0);
   const [loading, setLoading]     = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore]     = useState(false);
 
-  const doFetch = useCallback(
-    (nextPage: number, append: boolean): Promise<void> => {
-      return bidsApi
-        .getByListing(listingId, nextPage, 10)
-        .then((res) => {
-          const items = res.content ?? [];
-          setBids((prev) => (append ? [...prev, ...items] : items));
-          setPage(nextPage);
-          setHasMore(!res.last);
-        });
-    },
-    [listingId]
-  );
+  const doFetch = useCallback((): Promise<void> => {
+    return bidsApi
+      .getByListing(listingId)
+      .then((res) => {
+        setBids(res ?? []);
+      });
+  }, [listingId]);
 
   useEffect(() => {
-    doFetch(0, false).finally(() => setLoading(false));
+    doFetch().finally(() => setLoading(false));
   }, [doFetch]);
-
-  const handleLoadMore = useCallback(() => {
-    setLoadingMore(true);
-    doFetch(page + 1, true).finally(() => setLoadingMore(false));
-  }, [doFetch, page]);
 
   if (loading) {
     return (
@@ -94,22 +80,6 @@ export function BidHistory({ listingId }: BidHistoryProps) {
         </div>
       ))}
 
-      {loadingMore && (
-        <div className="space-y-2">
-          {[1, 2].map((i) => (
-            <Skeleton key={i} className="h-12 rounded-lg" />
-          ))}
-        </div>
-      )}
-
-      {hasMore && !loadingMore && (
-        <button
-          onClick={handleLoadMore}
-          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-        >
-          Muat lebih banyak
-        </button>
-      )}
     </div>
   );
 }

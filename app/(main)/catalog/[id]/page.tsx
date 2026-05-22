@@ -210,10 +210,10 @@ export default function ListingDetailPage() {
         <Link href="/catalog" className="hover:text-slate-600">Katalog</Link>
         <ArrowRight className="h-3 w-3" />
         <Link
-          href={`/catalog?category=${listing.category.id}`}
+          href={`/catalog?category=${listing.category?.id || listing.categoryId}`}
           className="hover:text-slate-600"
         >
-          {listing.category.name}
+          {listing.category?.name || "Kategori"}
         </Link>
         <ArrowRight className="h-3 w-3" />
         <span className="max-w-[180px] truncate text-slate-600">{listing.title}</span>
@@ -263,7 +263,7 @@ export default function ListingDetailPage() {
               >
                 {statusInfo.label}
               </Badge>
-              <span className="text-xs text-slate-400">{listing.category.name}</span>
+              <span className="text-xs text-slate-400">{listing.category?.name || "Kategori"}</span>
             </div>
 
             {/* Title */}
@@ -272,7 +272,7 @@ export default function ListingDetailPage() {
             </h1>
 
             {/* Seller */}
-            <SellerInfoCard seller={listing.seller} />
+            {listing.seller && <SellerInfoCard seller={listing.seller} />}
 
             {/* Price block */}
             <div className="rounded-xl border border-slate-200 bg-white p-4">

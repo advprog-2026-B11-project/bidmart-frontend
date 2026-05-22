@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { CountdownTimer } from "@/components/features/listings/CountdownTimer";
 import { useAuth } from "@/hooks/useAuth";
 import { cn, formatRupiah } from "@/lib/utils";
-import { AuctionStatus } from "@/constants/enums";
+import { AuctionStatus, UserRole } from "@/constants/enums";
 import { ROUTES } from "@/constants/routes";
 import { ApiError } from "@/lib/api/client";
 import * as listingsApi from "@/lib/api/listings";
@@ -301,11 +301,11 @@ function MyListingsContent() {
 
   /* Filter by user ownership + tab */
   const filtered = listings.filter(
-    (l) => user && l.seller.id === user.id && tabMatch(l, tab)
+    (l) => user && l.sellerId === user.id && tabMatch(l, tab)
   );
 
   /* Counts per tab (owned by user) */
-  const owned = user ? listings.filter((l) => l.seller.id === user.id) : [];
+  const owned = user ? listings.filter((l) => l.sellerId === user.id) : [];
   const counts: Record<ListingTab, number> = {
     aktif:   owned.filter((l) => l.status === AuctionStatus.ACTIVE || l.status === AuctionStatus.EXTENDED).length,
     draft:   owned.filter((l) => l.status === AuctionStatus.DRAFT).length,
@@ -400,7 +400,7 @@ function MyListingsContent() {
 
 export default function MyListingsPage() {
   return (
-    <AuthGuard mode="auth-required">
+    <AuthGuard mode="role" allowedRoles={[UserRole.SELLER, UserRole.ADMIN]}>
       <MyListingsContent />
     </AuthGuard>
   );

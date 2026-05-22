@@ -167,23 +167,19 @@ function MyBidsContent() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const [tab,     setTab]     = useState<FilterTab>("semua");
-  const [page,    setPage]    = useState(0);
-  const [hasMore, setHasMore] = useState(false);
 
-  const doFetch = useCallback((p = 0): Promise<void> => {
+  const doFetch = useCallback((): Promise<void> => {
     return bidsApi
-      .getMyBids(p, 20)
+      .getMyBids()
       .then((res) => {
-        setBids((prev) => (p === 0 ? res.content : [...prev, ...res.content]));
-        setHasMore(!res.last);
-        setPage(p);
+        setBids(res ?? []);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    doFetch(0);
+    doFetch();
   }, [doFetch]);
 
   /* Filtered list */
@@ -236,7 +232,7 @@ function MyBidsContent() {
         <div className="py-16 text-center">
           <p className="text-sm text-slate-500">Gagal memuat data penawaran.</p>
           <button
-            onClick={() => { setLoading(true); setError(false); doFetch(0); }}
+            onClick={() => { setLoading(true); setError(false); doFetch(); }}
             className="mt-3 text-sm font-medium text-blue-600 hover:underline"
           >
             Coba lagi
@@ -262,14 +258,6 @@ function MyBidsContent() {
             />
           ))}
 
-          {hasMore && (
-            <button
-              onClick={() => { setLoading(true); doFetch(page + 1); }}
-              className="mt-2 w-full rounded-xl border border-slate-200 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-            >
-              Muat lebih banyak
-            </button>
-          )}
         </div>
       )}
     </div>

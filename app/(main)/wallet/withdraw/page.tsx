@@ -113,7 +113,7 @@ function WithdrawContent() {
   }, []);
 
   const numAmount      = parseFloat(amount) || 0;
-  const available      = wallet?.balance ?? 0;
+  const available      = wallet?.balanceAvailable ?? 0;
   const exceedsBalance = numAmount > available;
   const amountValid    = numAmount > 0 && !exceedsBalance;
   const canSubmit      = amountValid && bankAccount.trim().length > 0 && !submitting;
@@ -224,7 +224,7 @@ function WithdrawContent() {
                   placeholder="0"
                   min={1}
                   max={available}
-                  step={1000}
+                  step="any"
                   required
                   className={cn(
                     "w-full rounded-lg border bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium tabular-nums",
@@ -326,8 +326,8 @@ function WithdrawContent() {
           <div className="space-y-4">
             {wallet ? (
               <BalanceCard
-                balance={wallet.balance}
-                holdBalance={wallet.holdBalance}
+                balance={wallet.balanceAvailable}
+                holdBalance={wallet.balanceLocked}
               />
             ) : (
               <Skeleton className="h-32 rounded-2xl" />
@@ -373,7 +373,7 @@ function WithdrawContent() {
                     )}
                   >
                     {wallet && numAmount > 0
-                      ? formatRupiah(Math.max(0, wallet.balance - numAmount))
+                      ? formatRupiah(Math.max(0, wallet.balanceAvailable - numAmount))
                       : "—"}
                   </span>
                 </div>

@@ -20,6 +20,7 @@ import {
   type FormErrors,
   type ListingFormData,
 } from "@/types/seller-form";
+import { UserRole } from "@/constants/enums";
 
 /* ─── Validation ──────────────────────────────────────────────────────────── */
 
@@ -168,12 +169,11 @@ function CreateListingContent() {
   const buildPayload = useCallback(() => ({
     title: formData.title.trim(),
     description: formData.description.trim(),
-    imageUrls: [formData.imageUrl],
+    imageUrl: formData.imageUrl,
     categoryId: formData.categoryId,
     startingPrice: parseInt(formData.startingPrice, 10),
     ...(formData.reservePrice ? { reservePrice: parseInt(formData.reservePrice, 10) } : {}),
-    startAt: new Date().toISOString(),
-    endAt: new Date(formData.endTime).toISOString(),
+    endTime: new Date(formData.endTime).toISOString(),
   }), [formData]);
 
   const handlePublish = useCallback(async () => {
@@ -300,7 +300,7 @@ function CreateListingContent() {
 
 export default function CreateListingPage() {
   return (
-    <AuthGuard mode="auth-required">
+    <AuthGuard mode="role" allowedRoles={[UserRole.SELLER, UserRole.ADMIN]}>
       <CreateListingContent />
     </AuthGuard>
   );

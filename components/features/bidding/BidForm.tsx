@@ -115,7 +115,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Derived */
-  const isSeller  = !!user && user.id === listing.seller.id;
+  const isSeller  = !!user && user.id === listing.sellerId;
   const isActive  = listing.status === AuctionStatus.ACTIVE || listing.status === AuctionStatus.EXTENDED;
   const isClosed  = listing.status === AuctionStatus.ENDED
                  || listing.status === AuctionStatus.SOLD
