@@ -264,7 +264,7 @@ export function Header() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-300 dark:bg-white dark:text-slate-800 dark:hover:bg-slate-50"
+                  className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
                   onClick={() => router.push(ROUTES.AUTH.LOGIN)}
                 >
                   Masuk
