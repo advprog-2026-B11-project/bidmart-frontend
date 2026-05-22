@@ -13,8 +13,8 @@ export interface Order {
 }
 
 export const orderApi = {
-  getOrdersByBuyer: async (buyerId: string): Promise<Order[]> => {
-    const response = await apiClient.get<Order[]>(`/api/orders/buyer/${buyerId}`);
+  getOrdersByUser: async (userId: string): Promise<Order[]> => {
+    const response = await apiClient.get<Order[]>(`/api/orders/user/${userId}`);
     return response.data;
   },
 
@@ -34,7 +34,7 @@ export const orderApi = {
   },
 
   disputeOrder: async (orderId: string, requesterId: string, reason: string): Promise<Order> => {
-    const response = await apiClient.post<Order>(`/api/orders/${orderId}/dispute`, {
+    const response = await apiClient.patch<Order>(`/api/orders/${orderId}/dispute`, {
       requesterId,
       reason,
     });
