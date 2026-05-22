@@ -28,7 +28,14 @@ function fallbackCategory(categoryId = ""): Category {
 }
 
 function normalizeListing(raw: BackendListing): Listing {
-  const imageUrls = raw.imageUrls ?? (raw.imageUrl ? [raw.imageUrl] : []);
+  let imageUrls = raw.imageUrls ?? (raw.imageUrl ? [raw.imageUrl] : []);
+  imageUrls = imageUrls.filter((url) => url && !url.includes("example.com"));
+  
+  let mainImageUrl = raw.imageUrl ?? imageUrls[0] ?? null;
+  if (mainImageUrl && mainImageUrl.includes("example.com")) {
+    mainImageUrl = imageUrls[0] ?? null;
+  }
+
   const currentPrice = raw.currentPrice ?? raw.currentHighestBid ?? raw.startingPrice ?? 0;
   const endAt = raw.endAt ?? raw.endTime ?? "";
   const categoryId = raw.categoryId ?? raw.category?.id ?? "";
@@ -40,7 +47,7 @@ function normalizeListing(raw: BackendListing): Listing {
     categoryId,
     title: raw.title ?? "",
     description: raw.description ?? "",
-    imageUrl: raw.imageUrl ?? imageUrls[0] ?? null,
+    imageUrl: mainImageUrl,
     imageUrls,
     startingPrice: raw.startingPrice ?? 0,
     currentPrice,

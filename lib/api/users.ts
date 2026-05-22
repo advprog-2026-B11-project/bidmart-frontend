@@ -31,20 +31,27 @@ function mapRole(role?: string): UserRole {
   return UserRole.BUYER;
 }
 
-function mapUserProfile(data: BackendUserProfile): UserProfile {
-  const now = new Date().toISOString();
+function normalizeUser(data: BackendUserProfile): UserProfile {
+  let avatar = data.imageUrl ?? null;
+  if (avatar && avatar.includes("example.com")) {
+    avatar = null;
+  }
   return {
     id: data.id,
     name: data.displayName || data.username,
     email: data.email,
-    avatarUrl: data.imageUrl ?? null,
+    avatarUrl: avatar,
     role: mapRole(data.role),
     phoneNumber: data.phoneNumber ?? null,
     shippingAddress: data.shippingAddress ?? null,
     mfaEnabled: data.mfaEnabled ?? data.isMfaEnabled ?? false,
-    createdAt: data.createdAt ?? now,
-    updatedAt: data.updatedAt ?? now,
+    createdAt: data.createdAt ?? new Date().toISOString(),
+    updatedAt: data.updatedAt ?? new Date().toISOString(),
   };
+}
+
+function mapUserProfile(data: BackendUserProfile): UserProfile {
+  return normalizeUser(data);
 }
 
 /** GET /api/users/me */
