@@ -154,6 +154,7 @@ export interface CreateListingRequest {
 
 export interface UpdateListingRequest extends Partial<CreateListingRequest> {
   status?: AuctionStatus;
+  endTime?: string;
 }
 
 /* ─── Bid ────────────────────────────────────────────────────────────────── */
