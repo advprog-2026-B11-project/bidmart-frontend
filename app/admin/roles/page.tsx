@@ -94,7 +94,7 @@ function CreateRoleForm({ allPermissions, onCreated, onCancel }: CreateRoleFormP
   const togglePerm = (id: string, checked: boolean) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      checked ? next.add(id) : next.delete(id);
+      if (checked) next.add(id); else next.delete(id);
       return next;
     });
   };
@@ -207,7 +207,7 @@ function RoleCard({ role, allPermissions, onUpdated, onDeleted }: RoleCardProps)
   const togglePerm = (id: string, checked: boolean) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      checked ? next.add(id) : next.delete(id);
+      if (checked) next.add(id); else next.delete(id);
       return next;
     });
   };

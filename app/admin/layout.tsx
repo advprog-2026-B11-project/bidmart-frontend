@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { ArrowLeft, LayoutDashboard, Shield, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthGuard } from "@/components/providers/AuthGuard";
-import { Logo } from "@/components/common/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar } from "@/components/ui/Avatar";
 import { UserRole } from "@/constants/enums";
