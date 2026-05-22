@@ -48,8 +48,8 @@ function normalizeUser(data: BackendUserProfile): UserProfile {
     shippingAddress: data.shippingAddress ?? null,
     mfaEnabled: data.mfaEnabled ?? data.isMfaEnabled ?? false,
     isEmailVerified: data.isEmailVerified ?? data.emailVerified ?? false,
-    createdAt: data.createdAt ?? now,
-    updatedAt: data.updatedAt ?? now,
+    createdAt: data.createdAt ?? new Date().toISOString(),
+    updatedAt: data.updatedAt ?? new Date().toISOString(),
   };
 }
 
