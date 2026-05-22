@@ -14,7 +14,9 @@ const statusConfig: Record<
   ACTIVE:    { label: "Aktif",       variant: "success" },
   EXTENDED:  { label: "Aktif",       variant: "success" },
   ENDED:     { label: "Berakhir",    variant: "default" },
+  CLOSED:    { label: "Berakhir",    variant: "default" },
   SOLD:      { label: "Terjual",     variant: "info"    },
+  WON:       { label: "Terjual",     variant: "info"    },
   DRAFT:     { label: "Draft",       variant: "default" },
   CANCELLED: { label: "Dibatalkan",  variant: "danger"  },
 };

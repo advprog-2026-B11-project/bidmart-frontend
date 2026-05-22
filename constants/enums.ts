@@ -3,8 +3,10 @@ export const AuctionStatus = {
   ACTIVE:    "ACTIVE",
   EXTENDED:  "EXTENDED",
   ENDED:     "ENDED",
+  CLOSED:    "CLOSED",
   CANCELLED: "CANCELLED",
   SOLD:      "SOLD",
+  WON:       "WON",
 } as const;
 export type AuctionStatus = (typeof AuctionStatus)[keyof typeof AuctionStatus];
 
