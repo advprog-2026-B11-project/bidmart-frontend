@@ -6,6 +6,7 @@ export const ROUTES = {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
     MFA: "/auth/verify-mfa",
+    VERIFY: "/auth/verify",
   },
   WALLET: "/wallet",
   WALLET_TOP_UP: "/wallet/top-up",
@@ -20,4 +21,8 @@ export const ROUTES = {
   NOTIFICATION_PREFERENCES: "/notifications/preferences",
   PROFILE: "/profile",
   SETTINGS: "/settings",
+  ADMIN: {
+    USERS: "/admin/users",
+    ROLES: "/admin/roles",
+  },
 } as const;

@@ -23,7 +23,7 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (id && user?.id) {
-      orderApi.getOrdersByBuyer(user.id)
+      orderApi.getOrdersByUser(user.id)
         .then((res) => {
           const found = res.find((o) => o.id === id);
           if (found) setOrder(found);
@@ -118,7 +118,7 @@ export default function OrderDetailPage() {
         </div>
 
         <div className="space-y-4">
-          {isSeller && order.status === 'PENDING' && (
+          {isSeller && order.status === 'CREATED' && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Input Nomor Resi Pengiriman</label>
               <div className="flex gap-2">

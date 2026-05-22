@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import * as authApi from "@/lib/api/auth";
 import * as usersApi from "@/lib/api/users";
+import { ApiError } from "@/lib/api/client";
 import {
   getAccessToken,
   setTokens,
@@ -19,10 +20,12 @@ import {
   clearUser,
 } from "@/lib/api/storage";
 import type { UserProfile, AuthResponse, MfaRequiredResponse } from "@/types/api";
+import { UserRole } from "@/constants/enums";
 
 interface LoginResult {
   mfaRequired: boolean;
   tempToken?: string;
+  role?: UserRole;
 }
 
 interface AuthContextValue {
@@ -31,14 +34,14 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (identifier: string, password: string) => Promise<LoginResult>;
-  verifyMfa: (tempToken: string, code: string) => Promise<void>;
+  verifyMfa: (tempToken: string, code: string) => Promise<UserRole>;
   logout: () => void;
   register: (
     username: string,
     email: string,
     displayName: string,
     password: string,
-    role: "USER" | "SELLER"
+    role: "BUYER" | "SELLER"
   ) => Promise<void>;
   refetchUser: () => Promise<void>;
 }
@@ -49,6 +52,28 @@ function isMfaRequired(r: AuthResponse | MfaRequiredResponse): r is MfaRequiredR
   return "mfaRequired" in r && r.mfaRequired === true;
 }
 
+function rawToProfile(raw: Record<string, unknown>): UserProfile {
+  const roleStr = String(raw.role ?? "BUYER").toUpperCase();
+  const role =
+    roleStr === "SELLER" ? UserRole.SELLER :
+    roleStr === "ADMIN"  ? UserRole.ADMIN  :
+                           UserRole.BUYER;
+  const now = new Date().toISOString();
+  return {
+    id:              String(raw.id ?? ""),
+    name:            String(raw.displayName ?? raw.name ?? raw.username ?? ""),
+    email:           String(raw.email ?? ""),
+    avatarUrl:       (raw.imageUrl ?? raw.avatarUrl ?? null) as string | null,
+    role,
+    phoneNumber:     (raw.phoneNumber ?? null) as string | null,
+    shippingAddress: (raw.shippingAddress ?? null) as string | null,
+    mfaEnabled:      Boolean(raw.mfaEnabled ?? raw.isMfaEnabled ?? false),
+    isEmailVerified: Boolean(raw.isEmailVerified ?? raw.emailVerified ?? false),
+    createdAt:       String(raw.createdAt ?? now),
+    updatedAt:       String(raw.updatedAt ?? now),
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUserState] = useState<UserProfile | null>(null);
@@ -57,7 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function hydrate() {
-      console.log("[AuthProvider] mount — hydrating from storage");
       const token = getAccessToken();
       if (!token) {
         setIsLoading(false);
@@ -72,14 +96,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserState(profile);
         setUser(profile);
       } catch {
-        setUserState(null);
-        setAccessToken(null);
+        // stored user is already set above; only clear if there was nothing stored
+        if (!stored) {
+          setUserState(null);
+          setAccessToken(null);
+        }
       } finally {
         setIsLoading(false);
       }
     }
     hydrate();
   }, []);
+
+  // Heartbeat: poll session validity every 15 s while logged in.
+  // Deactivated users receive 401 (anonymous → @PreAuthorize → UserExceptionHandler → 401).
+  // Refresh also fails (AuthServiceImpl checks isActive). On any auth error → force logout.
+  useEffect(() => {
+    if (!accessToken) return;
+    const id = setInterval(async () => {
+      try {
+        await usersApi.getMyProfile();
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          clearTokens();
+          clearUser();
+          setUserState(null);
+          setAccessToken(null);
+          router.push("/auth/login");
+        }
+      }
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [accessToken, router]);
 
   const login = useCallback(
     async (identifier: string, password: string): Promise<LoginResult> => {
@@ -89,27 +137,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setTokens(result.accessToken, result.refreshToken);
       setAccessToken(result.accessToken);
+      // BE may return a nested `user` object or a flat response — handle both.
+      const flat = result as unknown as Record<string, unknown>;
+      const rawUser = (flat.user ?? flat) as Record<string, unknown>;
+      const immediate = rawToProfile(rawUser);
+      setUserState(immediate);
+      setUser(immediate);
+      let resolvedRole = immediate.role;
       try {
         const profile = await usersApi.getMyProfile();
         setUser(profile);
         setUserState(profile);
+        resolvedRole = profile.role;
       } catch {
-        clearUser();
-        setUserState(null);
+        // keep the immediate profile extracted above
       }
-      return { mfaRequired: false };
+      return { mfaRequired: false, role: resolvedRole };
     },
     []
   );
 
   const verifyMfa = useCallback(
-    async (tempToken: string, code: string): Promise<void> => {
+    async (tempToken: string, code: string): Promise<UserRole> => {
       const result = await authApi.verifyMfa(tempToken, code);
       setTokens(result.accessToken, result.refreshToken);
       setAccessToken(result.accessToken);
-      const profile = await usersApi.getMyProfile();
-      setUser(profile);
-      setUserState(profile);
+      const flat = result as unknown as Record<string, unknown>;
+      const rawUser = (flat.user ?? flat) as Record<string, unknown>;
+      const immediate = rawToProfile(rawUser);
+      setUserState(immediate);
+      setUser(immediate);
+      let resolvedRole = immediate.role;
+      try {
+        const profile = await usersApi.getMyProfile();
+        setUser(profile);
+        setUserState(profile);
+        resolvedRole = profile.role;
+      } catch {
+        // keep immediate profile from MFA response
+      }
+      return resolvedRole;
     },
     []
   );
@@ -128,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: string,
       displayName: string,
       password: string,
-      role: "USER" | "SELLER"
+      role: "BUYER" | "SELLER"
     ): Promise<void> => {
       await authApi.register({ username, email, displayName, password, role });
     },

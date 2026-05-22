@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/client";
 import { ROUTES } from "@/constants/routes";
+import { UserRole } from "@/constants/enums";
 
 const loginSchema = z.object({
   identifier: z.string().min(3, "Minimal 3 karakter"),
@@ -42,7 +43,7 @@ function LoginForm() {
         return;
       }
       toast.success("Selamat datang kembali!");
-      router.push(ROUTES.HOME);
+      router.push(result.role === UserRole.ADMIN ? ROUTES.ADMIN.USERS : ROUTES.HOME);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Login gagal. Coba lagi.";
       toast.error(msg);
@@ -73,7 +74,7 @@ function LoginForm() {
               {...register("identifier")}
             />
             {errors.identifier && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.identifier.message}
               </p>
@@ -106,7 +107,7 @@ function LoginForm() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.password.message}
               </p>
@@ -118,7 +119,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => alert("Coming soon")}
-              className="text-xs text-blue-700 hover:underline dark:text-blue-400 focus:outline-none focus-visible:underline"
+              className="text-xs text-blue-700 hover:underline focus:outline-none focus-visible:underline"
             >
               Lupa password?
             </button>
@@ -134,11 +135,11 @@ function LoginForm() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Belum punya akun?{" "}
           <Link
             href={ROUTES.AUTH.REGISTER}
-            className="font-medium text-blue-700 hover:underline dark:text-blue-400"
+            className="font-medium text-blue-700 hover:underline"
           >
             Daftar di sini
           </Link>

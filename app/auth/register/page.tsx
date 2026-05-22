@@ -30,7 +30,7 @@ const registerSchema = z
       .string()
       .min(1, "Nama tampilan wajib diisi")
       .max(100, "Maksimal 100 karakter"),
-    role: z.enum(["USER", "SELLER"] as const, {
+    role: z.enum(["BUYER", "SELLER"] as const, {
       message: "Role wajib dipilih",
     }),
     password: z.string().min(8, "Password minimal 8 karakter"),
@@ -67,10 +67,10 @@ function PasswordStrengthBar({ password }: { password: string }) {
   const { label, bar, width } = strengthMap[strength];
   return (
     <div className="mt-1.5 space-y-1">
-      <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+      <div className="h-1.5 w-full rounded-full bg-slate-200">
         <div className={cn("h-full rounded-full transition-all duration-300", bar, width)} />
       </div>
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-xs text-slate-500">{label}</p>
     </div>
   );
 }
@@ -88,7 +88,7 @@ function RegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { role: "USER" },
+    defaultValues: { role: "BUYER" },
   });
 
   const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
@@ -126,7 +126,7 @@ function RegisterForm() {
               {...register("username")}
             />
             {errors.username && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.username.message}
               </p>
@@ -147,7 +147,7 @@ function RegisterForm() {
               {...register("email")}
             />
             {errors.email && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.email.message}
               </p>
@@ -169,7 +169,7 @@ function RegisterForm() {
               {...register("displayName")}
             />
             {errors.displayName && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.displayName.message}
               </p>
@@ -184,8 +184,8 @@ function RegisterForm() {
               aria-invalid={!!errors.role}
               className={cn(
                 "w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900",
-                "placeholder:text-slate-400 dark:bg-slate-900 dark:text-slate-50",
-                "border-slate-300 dark:border-slate-700",
+                "placeholder:text-slate-400",
+                "border-slate-300",
                 "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 "transition-colors duration-150",
@@ -193,11 +193,11 @@ function RegisterForm() {
               )}
               {...register("role")}
             >
-              <option value="USER">Pembeli</option>
+              <option value="BUYER">Pembeli</option>
               <option value="SELLER">Penjual</option>
             </select>
             {errors.role && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.role.message}
               </p>
@@ -229,7 +229,7 @@ function RegisterForm() {
             />
             <PasswordStrengthBar password={passwordValue} />
             {errors.password && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.password.message}
               </p>
@@ -262,7 +262,7 @@ function RegisterForm() {
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle size={12} aria-hidden="true" />
                 {errors.confirmPassword.message}
               </p>
@@ -279,11 +279,11 @@ function RegisterForm() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Sudah punya akun?{" "}
           <Link
             href={ROUTES.AUTH.LOGIN}
-            className="font-medium text-blue-700 hover:underline dark:text-blue-400"
+            className="font-medium text-blue-700 hover:underline"
           >
             Masuk
           </Link>

@@ -659,6 +659,17 @@ function ProfileContent() {
               onSave={handleAddressSave}
             />
             <ReadOnlyField label="Email" value={user.email} />
+            <div className="py-3.5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-400">Status Email</p>
+                <p className="mt-0.5 text-sm font-medium text-slate-500">{user.email}</p>
+              </div>
+              {user.isEmailVerified ? (
+                <Badge variant="success" className="text-xs">Terverifikasi</Badge>
+              ) : (
+                <Badge variant="warning" className="text-xs">Belum Diverifikasi</Badge>
+              )}
+            </div>
             <ReadOnlyField label="Role" value={user.role} />
             <div className="py-3.5">
               <p className="text-xs font-semibold text-slate-400">Bergabung sejak</p>

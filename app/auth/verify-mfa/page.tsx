@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
+import { UserRole } from "@/constants/enums";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -41,9 +42,9 @@ function VerifyMfaForm({ tempToken }: { tempToken: string }) {
       submitLock.current = true;
       setIsSubmitting(true);
       try {
-        await verifyMfa(tempToken, code);
+        const role = await verifyMfa(tempToken, code);
         toast.success("Verifikasi berhasil!");
-        router.push(ROUTES.HOME);
+        router.push(role === UserRole.ADMIN ? ROUTES.ADMIN.USERS : ROUTES.HOME);
       } catch (err) {
         const msg = err instanceof ApiError ? err.message : "Kode tidak valid. Coba lagi.";
         toast.error(msg);
@@ -149,13 +150,13 @@ function VerifyMfaForm({ tempToken }: { tempToken: string }) {
                 autoFocus={i === 0}
                 className={cn(
                   "h-12 w-12 rounded-xl border-2 text-center text-xl font-semibold",
-                  "bg-white dark:bg-slate-900 text-slate-900 dark:text-white",
+                  "bg-white text-slate-900",
                   "transition-all duration-150",
                   "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
                   digit
-                    ? "border-blue-400 bg-blue-50 dark:bg-blue-950/30"
-                    : "border-slate-200 dark:border-slate-700"
+                    ? "border-blue-400 bg-blue-50"
+                    : "border-slate-200"
                 )}
               />
             ))}
@@ -174,9 +175,9 @@ function VerifyMfaForm({ tempToken }: { tempToken: string }) {
           {/* Resend countdown */}
           <div className="text-center">
             {countdown > 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500">
                 Kirim ulang kode dalam{" "}
-                <span className="tabular-nums font-semibold text-blue-700 dark:text-blue-400">
+                <span className="tabular-nums font-semibold text-blue-700">
                   {countdown}s
                 </span>
               </p>
@@ -184,7 +185,7 @@ function VerifyMfaForm({ tempToken }: { tempToken: string }) {
               <button
                 type="button"
                 onClick={handleResend}
-                className="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400 focus:outline-none focus-visible:underline"
+                className="text-sm font-medium text-blue-700 hover:underline focus:outline-none focus-visible:underline"
               >
                 Kirim ulang kode
               </button>

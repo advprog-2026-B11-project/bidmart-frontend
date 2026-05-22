@@ -51,7 +51,12 @@ export async function refresh(
   return res;
 }
 
-/** POST /api/auth/verify-email — confirm email with token from link */
+/** GET /api/auth/verify?token=... — confirm email from link in inbox */
 export async function verifyEmail(token: string): Promise<void> {
-  await client.post("/api/auth/verify-email", { token });
+  await client.get("/api/auth/verify", { params: { token } });
+}
+
+/** POST /api/auth/resend-verification — resend verification email */
+export async function resendVerification(identifier: string): Promise<void> {
+  await client.post("/api/auth/resend-verification", { identifier });
 }

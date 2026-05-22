@@ -18,7 +18,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            className="text-sm font-medium text-slate-700"
           >
             {label}
           </label>
@@ -30,8 +30,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
           className={cn(
             "w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900",
-            "placeholder:text-slate-400 dark:bg-slate-900 dark:text-slate-50",
-            "border-slate-300 dark:border-slate-700",
+            "placeholder:text-slate-400",
+            "border-slate-300",
             "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
             "disabled:cursor-not-allowed disabled:opacity-50 resize-y min-h-[100px]",
             "transition-colors duration-150",
@@ -41,11 +41,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           {...props}
         />
         {error ? (
-          <p id={`${inputId}-error`} className="text-xs text-red-600 dark:text-red-400">
+          <p id={`${inputId}-error`} className="text-xs text-red-600">
             {error}
           </p>
         ) : helperText ? (
-          <p id={`${inputId}-helper`} className="text-xs text-slate-500 dark:text-slate-400">
+          <p id={`${inputId}-helper`} className="text-xs text-slate-500">
             {helperText}
           </p>
         ) : null}
