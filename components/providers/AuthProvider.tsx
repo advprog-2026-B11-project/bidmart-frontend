@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import * as authApi from "@/lib/api/auth";
 import * as usersApi from "@/lib/api/users";
+import { ApiError } from "@/lib/api/client";
 import {
   getAccessToken,
   setTokens,
@@ -81,7 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function hydrate() {
-      console.log("[AuthProvider] mount — hydrating from storage");
       const token = getAccessToken();
       if (!token) {
         setIsLoading(false);
@@ -107,6 +107,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     hydrate();
   }, []);
+
+  // Heartbeat: poll session validity every 15 s while logged in.
+  // Deactivated users receive 401 (anonymous → @PreAuthorize → UserExceptionHandler → 401).
+  // Refresh also fails (AuthServiceImpl checks isActive). On any auth error → force logout.
+  useEffect(() => {
+    if (!accessToken) return;
+    const id = setInterval(async () => {
+      try {
+        await usersApi.getMyProfile();
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          clearTokens();
+          clearUser();
+          setUserState(null);
+          setAccessToken(null);
+          router.push("/auth/login");
+        }
+      }
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [accessToken, router]);
 
   const login = useCallback(
     async (identifier: string, password: string): Promise<LoginResult> => {
