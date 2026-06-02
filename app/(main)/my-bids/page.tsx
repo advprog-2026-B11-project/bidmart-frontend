@@ -60,7 +60,6 @@ const statusDisplay: Record<
 };
 
 async function attachFreshListings(bids: Bid[]): Promise<Bid[]> {
-
   const listingIds = Array.from(new Set(bids.map((bid) => bid.listingId).filter(Boolean)));
   if (listingIds.length === 0) return bids;
 
@@ -210,7 +209,6 @@ function MyBidsContent() {
     return bidsApi
       .getMyBids()
       .then(async (res) => {
-        console.log("Fetched bids:", res);
         setBids(await attachFreshListings(res ?? []));
         setError(false);
       })

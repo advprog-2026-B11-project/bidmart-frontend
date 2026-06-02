@@ -5,53 +5,17 @@ import Link from 'next/link';
 import { notificationApi } from '@/lib/api/notifications';
 import { useAuth } from '@/hooks/useAuth';
 
-const unreadCountCache = new Map<string, number>();
-const unreadCountRequests = new Map<string, Promise<number>>();
-
 export default function NotificationBell() {
-  const { user, isLoading } = useAuth();
-  const userId = user?.id;
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
-    if (isLoading) return;
-
-    if (!userId) return;
-
-    let ignore = false;
-    const cachedCount = unreadCountCache.get(userId);
-    if (cachedCount !== undefined) {
-      Promise.resolve().then(() => {
-        if (!ignore) setUnreadCount(cachedCount);
-      });
+    if (user?.id) {
+      notificationApi.getUnreadNotifications(user.id)
+        .then(data => setUnreadCount(data.length))
+        .catch(console.error);
     }
-
-    const existingRequest = unreadCountRequests.get(userId);
-    const request = existingRequest ??
-      notificationApi.getUnreadNotifications(userId)
-        .then(data => {
-          const count = data.length;
-          unreadCountCache.set(userId, count);
-          return count;
-        })
-        .finally(() => {
-          unreadCountRequests.delete(userId);
-        });
-
-    if (!existingRequest) unreadCountRequests.set(userId, request);
-
-    request
-      .then(count => {
-        if (!ignore) setUnreadCount(count);
-      })
-      .catch(error => {
-        if (!ignore) console.error(error);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [userId, isLoading]);
+  }, [user]);
 
   if (!user) return null;
 

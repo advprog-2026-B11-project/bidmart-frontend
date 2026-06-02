@@ -167,8 +167,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
       } catch (err) {
         const apiErr = err instanceof ApiError ? err : null;
         const st = apiErr?.status ?? 0;
-        console.log("Bid error", { status: st, message: apiErr?.message });
-        if (st === 422) { toast.error(apiErr?.message ?? "Validasi gagal"); return "failure"; }
+        if (st === 422) { setShowModal(true); return "failure"; }
         if (st === 409 && !isRetry) return "retry";
         if (st === 409) { toast.error("Coba lagi"); return "failure"; }
         toast.error(apiErr?.message ?? "Terjadi kesalahan");

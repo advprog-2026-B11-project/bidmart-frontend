@@ -12,26 +12,6 @@ interface UseWebSocketReturn {
 }
 
 const MAX_RETRIES = 5;
-const DEFAULT_WS_URL = "/ws";
-const PROXIED_TRANSPORTS = ["xhr-streaming", "xhr-polling"];
-
-function resolveSockJsEndpoint(configuredUrl: string): {
-  url: string;
-  useHttpTransports: boolean;
-} {
-  if (typeof window === "undefined") {
-    return { url: configuredUrl, useHttpTransports: false };
-  }
-
-  const url = configuredUrl.startsWith("/")
-    ? new URL(configuredUrl, window.location.origin)
-    : new URL(configuredUrl);
-
-  return {
-    url: url.toString(),
-    useHttpTransports: url.origin === window.location.origin,
-  };
-}
 
 export function useWebSocket(token: string | null): UseWebSocketReturn {
   const [status, setStatus] = useState<WsStatus>("disconnected");
@@ -43,12 +23,6 @@ export function useWebSocket(token: string | null): UseWebSocketReturn {
   const retryTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const setSafeStatus = (nextStatus: WsStatus) => {
-      if (!cancelled) setStatus(nextStatus);
-    };
-
     if (!token) {
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       const staleClient = clientRef.current;
@@ -57,48 +31,27 @@ export function useWebSocket(token: string | null): UseWebSocketReturn {
       retryCountRef.current = 0;
       /* Defer setState to satisfy react-hooks/set-state-in-effect rule */
       if (staleClient) {
-        staleClient.deactivate().finally(() => setSafeStatus("disconnected")).catch(() => {});
+        staleClient.deactivate().finally(() => setStatus("disconnected")).catch(() => {});
       } else {
-        Promise.resolve().then(() => setSafeStatus("disconnected"));
+        Promise.resolve().then(() => setStatus("disconnected"));
       }
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
 
     retryCountRef.current = 0;
 
     function start(accessToken: string) {
-      if (cancelled) return;
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = null;
       clientRef.current?.deactivate().catch(() => {});
 
-      setSafeStatus("connecting");
-
-      let endpoint: ReturnType<typeof resolveSockJsEndpoint>;
-      try {
-        endpoint = resolveSockJsEndpoint(
-          process.env.NEXT_PUBLIC_WS_URL ?? DEFAULT_WS_URL
-        );
-      } catch {
-        setSafeStatus("error");
-        return;
-      }
+      setStatus("connecting");
 
       const client = new Client({
-        webSocketFactory: () =>
-          new SockJS(
-            endpoint.url,
-            undefined,
-            endpoint.useHttpTransports
-              ? { transports: PROXIED_TRANSPORTS }
-              : undefined
-          ),
+        webSocketFactory: () => new SockJS(process.env.NEXT_PUBLIC_WS_URL!),
         connectHeaders: { Authorization: `Bearer ${accessToken}` },
         reconnectDelay: 0,
         onConnect: () => {
-          setSafeStatus("connected");
+          setStatus("connected");
           retryCountRef.current = 0;
           subsRef.current.clear();
           pendingSubsRef.current.forEach((cb, dest) => {
@@ -108,7 +61,7 @@ export function useWebSocket(token: string | null): UseWebSocketReturn {
             } catch {}
           });
         },
-        onDisconnect: () => setSafeStatus("disconnected"),
+        onDisconnect: () => setStatus("disconnected"),
         onStompError:    () => retry(accessToken),
         onWebSocketError: () => retry(accessToken),
       });
@@ -118,21 +71,16 @@ export function useWebSocket(token: string | null): UseWebSocketReturn {
     }
 
     function retry(accessToken: string) {
-      if (cancelled) return;
-      setSafeStatus("error");
-      if (retryCountRef.current >= MAX_RETRIES || retryTimerRef.current) return;
+      setStatus("error");
+      if (retryCountRef.current >= MAX_RETRIES) return;
       const delay = Math.min(1000 * 2 ** retryCountRef.current, 30_000);
       retryCountRef.current += 1;
-      retryTimerRef.current = setTimeout(() => {
-        retryTimerRef.current = null;
-        start(accessToken);
-      }, delay);
+      retryTimerRef.current = setTimeout(() => start(accessToken), delay);
     }
 
     start(token);
 
     return () => {
-      cancelled = true;
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       clientRef.current?.deactivate().catch(() => {});
       clientRef.current = null;
