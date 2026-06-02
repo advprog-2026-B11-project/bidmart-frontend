@@ -115,7 +115,7 @@ export default function ListingDetailPage() {
 
   const fetchMinimumBid = useCallback(() => {
     if (!isAuthenticated) return;
-    bidsApi.getMinimumBid(id).then((res) => setMinimumBid(res.minimumBid)).catch(() => {});
+    bidsApi.getMinimumBid(id).then((res) => setMinimumBid(res.minimumBid ?? (res as unknown as number))).catch(() => {});
   }, [id, isAuthenticated]);
 
   const refetchAll = useCallback(() => {

@@ -170,7 +170,9 @@ function WalletContent() {
 
   /* Fetch wallet balance */
   const fetchWallet = useCallback(() => {
-    walletApi.getBalance().then(setWallet).catch(() => { });
+    walletApi.getBalance().then((data) => {
+      setWallet(data);
+    }).catch(() => { });
   }, []);
 
   /* Fetch transactions — accumulate pages */
