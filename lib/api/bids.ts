@@ -35,7 +35,7 @@ export async function getMinimumBid(
   listingId: string
 ): Promise<MinimumBidResponse> {
   const { data } = await client.get<MinimumBidResponse>(
-    `/api/bids/listing/${listingId}/minimum`
+    `/api/bids/listing/${listingId}/minimum-bid`
   );
   return data;
 }
