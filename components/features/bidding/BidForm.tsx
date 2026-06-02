@@ -167,7 +167,8 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
       } catch (err) {
         const apiErr = err instanceof ApiError ? err : null;
         const st = apiErr?.status ?? 0;
-        if (st === 422) { setShowModal(true); return "failure"; }
+        console.log("Bid error", { status: st, message: apiErr?.message });
+        if (st === 422) { toast.error(apiErr?.message ?? "Validasi gagal"); return "failure"; }
         if (st === 409 && !isRetry) return "retry";
         if (st === 409) { toast.error("Coba lagi"); return "failure"; }
         toast.error(apiErr?.message ?? "Terjadi kesalahan");
@@ -292,7 +293,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
               onChange={(e) => setAmount(e.target.value)}
               placeholder={String(minRequired)}
               min={minRequired}
-              step={1000}
+              step={1}
               required
               className={cn(
                 "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
@@ -350,7 +351,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
                 onChange={(e) => setProxyMax(e.target.value)}
                 placeholder={amount || String(minRequired)}
                 min={numAmount || minRequired}
-                step={1000}
+                step={1}
                 className={cn(
                   "w-full rounded-lg border bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium tabular-nums text-slate-900",
                   "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20",
