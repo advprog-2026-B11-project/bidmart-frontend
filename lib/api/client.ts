@@ -69,7 +69,9 @@ function redirectToHome(): void {
 // Handle 401: silent token refresh, then retry. On double failure → logout.
 // Handle 403: redirect to home page immediately.
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   async (error: AxiosError) => {
     const original = error.config as RetryConfig;
 
