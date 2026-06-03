@@ -150,6 +150,9 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
       const latest = proxyBids.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )[0] ?? null;
+      console.log("[BidForm] getMyBids (initial) — all bids:", bids);
+      console.log("[BidForm] getMyBids (initial) — proxyBids for listing:", proxyBids);
+      console.log("[BidForm] getMyBids (initial) — selected activeProxy:", latest);
       setActiveProxy(latest);
     }).catch(() => {});
   }, [isAuthenticated, listing.id]);
@@ -265,9 +268,12 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
         walletApi.getBalance().then((w) => setBalance(w.balanceAvailable)).catch(() => {});
         /* refresh active proxy state */
         bidsApi.getMyBids().then((bids) => {
-          const latest = bids
-            .filter((b) => b.listingId === listing.id && b.proxyBid === true)
+          const proxyBids = bids.filter((b) => b.listingId === listing.id && b.proxyBid === true);
+          const latest = proxyBids
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null;
+          console.log("[BidForm] getMyBids (post-success) — all bids:", bids);
+          console.log("[BidForm] getMyBids (post-success) — proxyBids for listing:", proxyBids);
+          console.log("[BidForm] getMyBids (post-success) — selected activeProxy:", latest);
           setActiveProxy(latest);
         }).catch(() => {});
       }
@@ -387,41 +393,44 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
         </div>
 
         {/* Active proxy banner */}
-        {activeProxy && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5">
-            <Bot className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-            <div className="min-w-0 flex-1 text-xs">
-              <p className="font-semibold text-violet-800">Proxy bid aktif</p>
-              {activeProxy.proxyMaxLimit != null ? (
-                <>
+        {activeProxy && (() => {
+          console.log("[BidForm] render — activeProxy:", activeProxy, "proxyMaxLimit:", activeProxy.proxyMaxLimit);
+          return (
+            <div className="flex items-start gap-2.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5">
+              <Bot className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+              <div className="min-w-0 flex-1 text-xs">
+                <p className="font-semibold text-violet-800">Proxy bid aktif</p>
+                {activeProxy.proxyMaxLimit != null ? (
+                  <>
+                    <p className="mt-0.5 text-violet-600">
+                      Batas maks:{" "}
+                      <span className="font-semibold tabular-nums">
+                        {formatRupiah(activeProxy.proxyMaxLimit)}
+                      </span>
+                      {" · "}Bid terakhir:{" "}
+                      <span className="font-semibold tabular-nums">
+                        {formatRupiah(activeProxy.amount)}
+                      </span>
+                    </p>
+                    <p className="mt-1.5 text-violet-400">
+                      Untuk batalkan proxy, pasang bid manual &gt;{" "}
+                      <span className="font-semibold tabular-nums">
+                        {formatRupiah(activeProxy.proxyMaxLimit)}
+                      </span>
+                    </p>
+                  </>
+                ) : (
                   <p className="mt-0.5 text-violet-600">
-                    Batas maks:{" "}
-                    <span className="font-semibold tabular-nums">
-                      {formatRupiah(activeProxy.proxyMaxLimit)}
-                    </span>
-                    {" · "}Bid terakhir:{" "}
+                    Bid terakhir:{" "}
                     <span className="font-semibold tabular-nums">
                       {formatRupiah(activeProxy.amount)}
                     </span>
                   </p>
-                  <p className="mt-1.5 text-violet-400">
-                    Untuk batalkan proxy, pasang bid manual &gt;{" "}
-                    <span className="font-semibold tabular-nums">
-                      {formatRupiah(activeProxy.proxyMaxLimit)}
-                    </span>
-                  </p>
-                </>
-              ) : (
-                <p className="mt-0.5 text-violet-600">
-                  Bid terakhir:{" "}
-                  <span className="font-semibold tabular-nums">
-                    {formatRupiah(activeProxy.amount)}
-                  </span>
-                </p>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Proxy bid toggle */}
         <label className="flex cursor-pointer items-center gap-2.5 text-sm">
