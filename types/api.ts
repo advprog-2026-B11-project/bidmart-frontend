@@ -163,9 +163,12 @@ export interface UpdateListingRequest extends Partial<CreateListingRequest> {
 export interface Bid {
   id: string;
   listingId: string;
-  bidder: UserProfile;
+  buyerId?: string;
+  bidder?: UserProfile;
   amount: number;
-  isWinning: boolean;
+  proxyBid?: boolean;
+  proxyMaxLimit?: number | null;
+  isWinning?: boolean;
   createdAt: string;
   listing?: Listing;
 }
