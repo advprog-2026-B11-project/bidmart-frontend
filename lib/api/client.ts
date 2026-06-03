@@ -13,12 +13,14 @@ import {
 export class ApiError extends Error {
   status: number;
   code?: string;
+  data?: Record<string, unknown>;
 
-  constructor(status: number, message: string, code?: string) {
+  constructor(status: number, message: string, code?: string, data?: Record<string, unknown>) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -140,7 +142,7 @@ function normalizeError(error: unknown): ApiError {
       typeof data?.message === "string" ? data.message : "Terjadi kesalahan";
     const code =
       typeof data?.code === "string" ? data.code : undefined;
-    return new ApiError(error.response.status, message, code);
+    return new ApiError(error.response.status, message, code, data);
   }
 
   return new ApiError(0, "Terjadi kesalahan tidak terduga");

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Gavel, Trophy } from "lucide-react";
+import { Bot, Gavel, Trophy } from "lucide-react";
 import { AuthGuard } from "@/components/providers/AuthGuard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Badge } from "@/components/ui/Badge";
@@ -182,6 +182,14 @@ function BidRow({ bid, bidStatus }: BidRowProps) {
             {formatRupiah(bid.amount)}
           </span>
         </p>
+        {bid.proxyBid && (
+          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-violet-500">
+            <Bot className="h-3 w-3" />
+            {bid.proxyMaxLimit != null
+              ? `Proxy · maks ${formatRupiah(bid.proxyMaxLimit)}`
+              : "Proxy bid"}
+          </p>
+        )}
         <p className="mt-0.5 text-[11px] text-slate-300">
           {formatRelativeTime(bid.createdAt)}
         </p>
@@ -195,21 +203,27 @@ function BidRow({ bid, bidStatus }: BidRowProps) {
   );
 }
 
+const PAGE_SIZE = 10;
+
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 
 function MyBidsContent() {
   const { user } = useAuth();
-  const [bids,    setBids]    = useState<Bid[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(false);
-  const [tab,     setTab]     = useState<FilterTab>("semua");
+  const [bids,      setBids]      = useState<Bid[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(false);
+  const [tab,       setTab]       = useState<FilterTab>("semua");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const doFetch = useCallback((): Promise<void> => {
     return bidsApi
       .getMyBids()
       .then(async (res) => {
-        setBids(await attachFreshListings(res ?? []));
+        const sorted = (res ?? []).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setBids(await attachFreshListings(sorted));
         setError(false);
       })
       .catch(() => setError(true))
@@ -244,7 +258,13 @@ function MyBidsContent() {
     return () => window.removeEventListener("ws-notification", onWsNotification);
   }, [doFetch]);
 
-  /* Filtered list */
+  /* Reset pagination when tab changes */
+  const handleTabChange = (key: FilterTab) => {
+    setTab(key);
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  /* Filtered + paginated list */
   const filtered = bids.filter((bid) => {
     if (!user) return true;
     if (tab === "semua") return true;
@@ -254,6 +274,9 @@ function MyBidsContent() {
     if (tab === "kalah")  return st === "kalah";
     return true;
   });
+
+  const visible  = filtered.slice(0, visibleCount);
+  const hasMore  = filtered.length > visibleCount;
 
   return (
     <div className="min-h-screen bg-white">
@@ -273,7 +296,7 @@ function MyBidsContent() {
           {TABS.map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => handleTabChange(key)}
               className={cn(
                 "flex-1 rounded-xl py-2 text-sm font-medium transition-all duration-150",
                 tab === key
@@ -312,15 +335,30 @@ function MyBidsContent() {
             </div>
           )
         ) : (
-          <div className="space-y-2.5">
-            {filtered.map((bid) => (
-              <BidRow
-                key={bid.id}
-                bid={bid}
-                bidStatus={user ? deriveBidStatus(bid, user.id) : "tutup"}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-2.5">
+              {visible.map((bid) => (
+                <BidRow
+                  key={bid.id}
+                  bid={bid}
+                  bidStatus={user ? deriveBidStatus(bid, user.id) : "tutup"}
+                />
+              ))}
+            </div>
+
+            {hasMore ? (
+              <button
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                className="mt-6 w-full rounded-xl border border-slate-200 py-3 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+              >
+                Muat lebih banyak ({filtered.length - visibleCount} lainnya)
+              </button>
+            ) : filtered.length > PAGE_SIZE ? (
+              <p className="mt-6 text-center text-xs text-slate-300">
+                Semua {filtered.length} penawaran ditampilkan
+              </p>
+            ) : null}
+          </>
         )}
       </div>
     </div>
