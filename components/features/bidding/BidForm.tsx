@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
+  Bot,
   Gavel,
   Info,
   TrendingUp,
@@ -20,7 +21,7 @@ import { ApiError } from "@/lib/api/client";
 import { ROUTES } from "@/constants/routes";
 import * as bidsApi from "@/lib/api/bids";
 import * as walletApi from "@/lib/api/wallet";
-import type { Listing } from "@/types/api";
+import type { Bid, Listing } from "@/types/api";
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
 
@@ -111,6 +112,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
   const [balance,       setBalance]       = useState<number | null>(null);
   const [showModal,     setShowModal]     = useState(false);
   const [flashAmount,   setFlashAmount]   = useState(false);
+  const [activeProxy,   setActiveProxy]   = useState<Bid | null>(null);
 
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -129,6 +131,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
 
   const amountTooLow   = numAmount > 0 && numAmount < minRequired;
   const proxyError     = proxyBid && numProxyMax > 0 && numProxyMax < numAmount;
+  const proxyMaxTooLow = proxyBid && activeProxy && numProxyMax > 0 && activeProxy.proxyMaxLimit != null && numProxyMax <= activeProxy.proxyMaxLimit;
   const lowBalance     = balance !== null && numAmount > 0 && balance < numAmount;
 
   /* Fetch wallet balance */
@@ -136,6 +139,31 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
     if (!isAuthenticated) return;
     walletApi.getBalance().then((w) => setBalance(w.balanceAvailable)).catch(() => {});
   }, [isAuthenticated]);
+
+  /* Fetch active proxy bid for this listing */
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    bidsApi.getMyBids().then((bids) => {
+      const proxyBids = bids.filter(
+        (b) => b.listingId === listing.id && b.proxyBid === true
+      );
+      const latest = proxyBids.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0] ?? null;
+      setActiveProxy(latest);
+    }).catch(() => {});
+  }, [isAuthenticated, listing.id]);
+
+  /* Toggle proxy checkbox — auto-fill amount for re-bid */
+  const handleToggleProxy = useCallback(
+    (checked: boolean) => {
+      setProxyBid(checked);
+      if (checked && activeProxy && !amount) {
+        setAmount(String(listing.currentPrice));
+      }
+    },
+    [activeProxy, amount, listing.currentPrice]
+  );
 
   /* Quick increment */
   const handleIncrement = useCallback(
@@ -167,15 +195,40 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
       } catch (err) {
         const apiErr = err instanceof ApiError ? err : null;
         const st = apiErr?.status ?? 0;
-        console.log("Bid error", { status: st, message: apiErr?.message });
-        if (st === 422) { toast.error(apiErr?.message ?? "Validasi gagal"); return "failure"; }
+        const errCode = apiErr?.code;
+
+        if (errCode === "PROXY_OUTBID") {
+          const highest = apiErr?.data?.currentHighestBid as number | undefined;
+          toast.warning(
+            highest != null
+              ? `Bid Anda dikalahkan oleh proxy. Harga tertinggi saat ini: ${formatRupiah(highest)}`
+              : "Bid Anda langsung dikalahkan oleh proxy aktif."
+          );
+          onBidSuccess?.();
+          return "failure";
+        }
+
+        if (errCode === "BID_TOO_LOW") {
+          const minBid = apiErr?.data?.minimumBid as number | undefined;
+          toast.error(
+            minBid != null
+              ? `Bid terlalu rendah. Minimum berikutnya: ${formatRupiah(minBid)}`
+              : "Bid terlalu rendah."
+          );
+          return "failure";
+        }
+
+        if (errCode === "INSUFFICIENT_BALANCE") { setShowModal(true); return "failure"; }
+
         if (st === 409 && !isRetry) return "retry";
-        if (st === 409) { toast.error("Coba lagi"); return "failure"; }
+        if (st === 409) { toast.error("Terjadi konflik, coba lagi"); return "failure"; }
+        if (st === 400) { toast.error(apiErr?.message ?? "Data tidak valid"); return "failure"; }
+        if (st === 422) { toast.error(apiErr?.message ?? "Validasi gagal"); return "failure"; }
         toast.error(apiErr?.message ?? "Terjadi kesalahan");
         return "failure";
       }
     },
-    [listing.id, proxyBid, numProxyMax]
+    [listing.id, proxyBid, numProxyMax, onBidSuccess]
   );
 
   const handleSubmit = useCallback(
@@ -190,6 +243,7 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
       }
       if (lowBalance)  { setShowModal(true); return; }
       if (proxyError)  { toast.error("Batas proxy harus ≥ jumlah bid"); return; }
+      if (proxyMaxTooLow) { toast.error(`Batas proxy baru harus lebih besar dari batas saat ini (${formatRupiah(activeProxy!.proxyMaxLimit!)})`); return; }
 
       setSubmitting(true);
       const key = generateIdempotencyKey();
@@ -202,18 +256,25 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
       }
 
       if (result === "success") {
-        toast.success("Penawaran berhasil!");
+        toast.success(proxyBid ? "Proxy bid berhasil dipasang!" : "Penawaran berhasil!");
         triggerConfetti();
         setAmount("");
         setProxyBid(false);
         setProxyMax("");
         onBidSuccess?.();
         walletApi.getBalance().then((w) => setBalance(w.balanceAvailable)).catch(() => {});
+        /* refresh active proxy state */
+        bidsApi.getMyBids().then((bids) => {
+          const latest = bids
+            .filter((b) => b.listingId === listing.id && b.proxyBid === true)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null;
+          setActiveProxy(latest);
+        }).catch(() => {});
       }
 
       setSubmitting(false);
     },
-    [isAuthenticated, user, amount, minRequired, lowBalance, proxyError, doPlace, onBidSuccess]
+    [isAuthenticated, user, amount, minRequired, lowBalance, proxyError, proxyMaxTooLow, activeProxy, proxyBid, doPlace, listing.id, onBidSuccess]
   );
 
   /* ── Guards ── */
@@ -325,15 +386,54 @@ export function BidForm({ listing, minimumBid, onBidSuccess }: BidFormProps) {
           </div>
         </div>
 
+        {/* Active proxy banner */}
+        {activeProxy && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5">
+            <Bot className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+            <div className="min-w-0 flex-1 text-xs">
+              <p className="font-semibold text-violet-800">Proxy bid aktif</p>
+              {activeProxy.proxyMaxLimit != null ? (
+                <>
+                  <p className="mt-0.5 text-violet-600">
+                    Batas maks:{" "}
+                    <span className="font-semibold tabular-nums">
+                      {formatRupiah(activeProxy.proxyMaxLimit)}
+                    </span>
+                    {" · "}Bid terakhir:{" "}
+                    <span className="font-semibold tabular-nums">
+                      {formatRupiah(activeProxy.amount)}
+                    </span>
+                  </p>
+                  <p className="mt-1.5 text-violet-400">
+                    Untuk batalkan proxy, pasang bid manual &gt;{" "}
+                    <span className="font-semibold tabular-nums">
+                      {formatRupiah(activeProxy.proxyMaxLimit)}
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <p className="mt-0.5 text-violet-600">
+                  Bid terakhir:{" "}
+                  <span className="font-semibold tabular-nums">
+                    {formatRupiah(activeProxy.amount)}
+                  </span>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Proxy bid toggle */}
         <label className="flex cursor-pointer items-center gap-2.5 text-sm">
           <input
             type="checkbox"
             checked={proxyBid}
-            onChange={(e) => setProxyBid(e.target.checked)}
+            onChange={(e) => handleToggleProxy(e.target.checked)}
             className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
           />
-          <span className="font-medium text-slate-700">Proxy bid otomatis</span>
+          <span className="font-medium text-slate-700">
+            {activeProxy ? "Naikkan batas proxy" : "Proxy bid otomatis"}
+          </span>
         </label>
 
         {proxyBid && (
