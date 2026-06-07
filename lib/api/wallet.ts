@@ -13,6 +13,19 @@ export async function getBalance(): Promise<Wallet> {
   return data;
 }
 
+/** Helper to parse Java LocalDateTime Array to ISO String */
+function normalizeTransaction(tx: any): Transaction {
+  if (!tx) return tx;
+  let dateStr = tx.createdAt;
+  if (Array.isArray(dateStr)) {
+    const [y, m, d, h = 0, min = 0, s = 0, ns = 0] = dateStr;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ms = Math.floor(ns / 1_000_000);
+    dateStr = `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}:${pad(s)}.${String(ms).padStart(3, "0")}`;
+  }
+  return { ...tx, createdAt: dateStr };
+}
+
 /** POST /api/wallet/topup */
 export async function topUp(
   data: TopUpRequest,
@@ -40,12 +53,12 @@ export async function topUp(
     idempotencyKey: key,
   };
 
-  const { data: res } = await client.post<Transaction>(
-    "/api/wallet/topup",
+  const { data: res } = await client.post<any>(
+    "/api/wallet/top-up",
     payload,
     { headers: { "Idempotency-Key": key } }
   );
-  return res;
+  return normalizeTransaction(res);
 }
 
 /** POST /api/wallet/withdraw */
@@ -75,12 +88,12 @@ export async function withdraw(
     idempotencyKey: key,
   };
 
-  const { data: res } = await client.post<Transaction>(
+  const { data: res } = await client.post<any>(
     "/api/wallet/withdraw",
     payload,
     { headers: { "Idempotency-Key": key } }
   );
-  return res;
+  return normalizeTransaction(res);
 }
 
 /** GET /api/wallet/transactions */
@@ -88,13 +101,13 @@ export async function getTransactions(
   page = 0,
   size = 20
 ): Promise<PaginatedResponse<Transaction>> {
-  const { data } = await client.get<PaginatedResponse<Transaction> | Transaction[]>(
+  const { data } = await client.get<any>(
     "/api/wallet/transactions",
     { params: { page, size } }
   );
   if (Array.isArray(data)) {
     return {
-      content: data,
+      content: data.map(normalizeTransaction),
       page: 0,
       size: data.length,
       totalElements: data.length,
@@ -102,13 +115,16 @@ export async function getTransactions(
       last: true,
     };
   }
-  return data;
+  return {
+    ...data,
+    content: (data.content || []).map(normalizeTransaction),
+  };
 }
 
 /** GET /api/wallet/transactions/:id */
 export async function getTransactionById(id: string): Promise<Transaction> {
-  const { data } = await client.get<Transaction>(
+  const { data } = await client.get<any>(
     `/api/wallet/transactions/${id}`
   );
-  return data;
+  return normalizeTransaction(data);
 }
