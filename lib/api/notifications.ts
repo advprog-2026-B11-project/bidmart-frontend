@@ -20,31 +20,32 @@ export interface NotificationPreference {
 }
 
 /** Helper to parse Java LocalDateTime Array to ISO String */
-function normalizeNotification(notif: any): Notification {
-  if (!notif) return notif;
-  let dateStr = notif.createdAt;
+function normalizeNotification(notif: unknown): Notification {
+  if (!notif) return notif as Notification;
+  const n = notif as Record<string, unknown>;
+  let dateStr = n.createdAt;
   if (Array.isArray(dateStr)) {
-    const [y, m, d, h = 0, min = 0, s = 0, ns = 0] = dateStr;
-    const pad = (n: number) => String(n).padStart(2, "0");
+    const [y, m, d, h = 0, min = 0, s = 0, ns = 0] = dateStr as number[];
+    const pad = (num: number) => String(num).padStart(2, "0");
     const ms = Math.floor(ns / 1_000_000);
     dateStr = `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}:${pad(s)}.${String(ms).padStart(3, "0")}`;
   }
-  return { ...notif, createdAt: dateStr };
+  return { ...n, createdAt: dateStr } as Notification;
 }
 
 export const notificationApi = {
   getUserNotifications: async (userId: string): Promise<Notification[]> => {
-    const response = await client.get<any[]>(`/api/notifications/user/${userId}`);
+    const response = await client.get<unknown[]>(`/api/notifications/user/${userId}`);
     return response.data.map(normalizeNotification);
   },
 
   getUnreadNotifications: async (userId: string): Promise<Notification[]> => {
-    const response = await client.get<any[]>(`/api/notifications/user/${userId}/unread`);
+    const response = await client.get<unknown[]>(`/api/notifications/user/${userId}/unread`);
     return response.data.map(normalizeNotification);
   },
 
   markAsRead: async (notificationId: string): Promise<Notification> => {
-    const response = await client.patch<any>(`/api/notifications/${notificationId}/read`);
+    const response = await client.patch<unknown>(`/api/notifications/${notificationId}/read`);
     return normalizeNotification(response.data);
   },
 

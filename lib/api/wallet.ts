@@ -14,16 +14,17 @@ export async function getBalance(): Promise<Wallet> {
 }
 
 /** Helper to parse Java LocalDateTime Array to ISO String */
-function normalizeTransaction(tx: any): Transaction {
-  if (!tx) return tx;
-  let dateStr = tx.createdAt;
+function normalizeTransaction(tx: unknown): Transaction {
+  if (!tx) return tx as Transaction;
+  const t = tx as Record<string, unknown>;
+  let dateStr = t.createdAt;
   if (Array.isArray(dateStr)) {
-    const [y, m, d, h = 0, min = 0, s = 0, ns = 0] = dateStr;
+    const [y, m, d, h = 0, min = 0, s = 0, ns = 0] = dateStr as number[];
     const pad = (n: number) => String(n).padStart(2, "0");
     const ms = Math.floor(ns / 1_000_000);
     dateStr = `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}:${pad(s)}.${String(ms).padStart(3, "0")}`;
   }
-  return { ...tx, createdAt: dateStr };
+  return { ...t, createdAt: dateStr } as Transaction;
 }
 
 /** POST /api/wallet/topup */
@@ -53,7 +54,7 @@ export async function topUp(
     idempotencyKey: key,
   };
 
-  const { data: res } = await client.post<any>(
+  const { data: res } = await client.post<unknown>(
     "/api/wallet/top-up",
     payload,
     { headers: { "Idempotency-Key": key } }
@@ -88,7 +89,7 @@ export async function withdraw(
     idempotencyKey: key,
   };
 
-  const { data: res } = await client.post<any>(
+  const { data: res } = await client.post<unknown>(
     "/api/wallet/withdraw",
     payload,
     { headers: { "Idempotency-Key": key } }
@@ -101,7 +102,7 @@ export async function getTransactions(
   page = 0,
   size = 20
 ): Promise<PaginatedResponse<Transaction>> {
-  const { data } = await client.get<any>(
+  const { data } = await client.get<unknown>(
     "/api/wallet/transactions",
     { params: { page, size } }
   );
@@ -115,15 +116,16 @@ export async function getTransactions(
       last: true,
     };
   }
+  const paginated = data as PaginatedResponse<unknown>;
   return {
-    ...data,
-    content: (data.content || []).map(normalizeTransaction),
-  };
+    ...paginated,
+    content: (paginated.content || []).map(normalizeTransaction) as Transaction[],
+  } as PaginatedResponse<Transaction>;
 }
 
 /** GET /api/wallet/transactions/:id */
 export async function getTransactionById(id: string): Promise<Transaction> {
-  const { data } = await client.get<any>(
+  const { data } = await client.get<unknown>(
     `/api/wallet/transactions/${id}`
   );
   return normalizeTransaction(data);
