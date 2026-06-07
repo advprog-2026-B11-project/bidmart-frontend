@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowUpRight,
+  Building2,
+  Check,
   ChevronDown,
   Clock,
+  Smartphone,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,23 +34,79 @@ const QUICK_AMOUNTS = [
   { label: "Rp 5 Jt",  value: 5_000_000 },
 ];
 
+type SelectedMethod = "BANK" | "GOPAY";
+
+/* ─── Payment method card ────────────────────────────────────────────────── */
+
+interface MethodCardProps {
+  label: string;
+  sublabel?: string;
+  icon: React.ElementType;
+  active: boolean;
+  onClick: () => void;
+}
+
+function MethodCard({ label, sublabel, icon: Icon, active, onClick }: MethodCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "relative flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
+        active
+          ? "border-slate-800 bg-slate-50 ring-1 ring-slate-800/30"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+      )}
+    >
+      <Icon
+        className={cn(
+          "h-5 w-5 shrink-0",
+          active ? "text-slate-800" : "text-slate-400"
+        )}
+      />
+      <div className="min-w-0 flex-1">
+        <p className={cn("text-sm font-semibold", active ? "text-slate-900" : "text-slate-700")}>
+          {label}
+        </p>
+        {sublabel && (
+          <p className="mt-0.5 text-[11px] text-slate-400">{sublabel}</p>
+        )}
+      </div>
+      {active && (
+        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-slate-800">
+          <Check className="h-2.5 w-2.5 text-white" />
+        </div>
+      )}
+    </button>
+  );
+}
+
 /* ─── Confirmation Dialog ────────────────────────────────────────────────── */
 
 interface ConfirmDialogProps {
   amount: number;
+  method: SelectedMethod;
   bankName: string;
   bankAccount: string;
+  phoneNumber: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 function ConfirmDialog({
   amount,
+  method,
   bankName,
   bankAccount,
+  phoneNumber,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const destination =
+    method === "BANK"
+      ? <>rekening <span className="font-semibold">{bankName}</span> no. <span className="font-semibold tabular-nums">{bankAccount}</span></>
+      : <>akun <span className="font-semibold">GoPay</span> no. <span className="font-semibold tabular-nums">{phoneNumber}</span></>;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -72,8 +131,7 @@ function ConfirmDialog({
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
           Anda akan menarik dana senilai{" "}
           <span className="font-bold text-slate-900">{formatRupiah(amount)}</span>{" "}
-          ke rekening <span className="font-semibold">{bankName}</span>{" "}
-          no. <span className="font-semibold tabular-nums">{bankAccount}</span>.
+          ke {destination}.
         </p>
 
         <div className="mt-5 flex gap-3">
@@ -101,12 +159,16 @@ function ConfirmDialog({
 function WithdrawContent() {
   const router = useRouter();
 
-  const [wallet,      setWallet]      = useState<Wallet | null>(null);
-  const [amount,      setAmount]      = useState("");
-  const [bankName,    setBankName]    = useState("BCA");
-  const [bankAccount, setBankAccount] = useState("");
-  const [submitting,  setSubmitting]  = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [wallet,         setWallet]         = useState<Wallet | null>(null);
+  const [amount,         setAmount]         = useState("");
+  const [selectedMethod, setSelectedMethod] = useState<SelectedMethod>("BANK");
+  const [bankName,       setBankName]       = useState("BCA");
+  const [bankAccount,    setBankAccount]    = useState("");
+  const [phoneNumber,    setPhoneNumber]    = useState("");
+  const [submitting,     setSubmitting]     = useState(false);
+  const [showConfirm,    setShowConfirm]    = useState(false);
+
+  const idempotencyKey = useRef(crypto.randomUUID());
 
   useEffect(() => {
     walletApi.getBalance().then(setWallet).catch(() => {});
@@ -116,7 +178,13 @@ function WithdrawContent() {
   const available      = wallet?.balanceAvailable ?? 0;
   const exceedsBalance = numAmount > available;
   const amountValid    = numAmount > 0 && !exceedsBalance;
-  const canSubmit      = amountValid && bankAccount.trim().length > 0 && !submitting;
+
+  const detailsValid =
+    selectedMethod === "BANK"
+      ? bankAccount.trim().length > 0
+      : phoneNumber.trim().length >= 10;
+
+  const canSubmit = amountValid && detailsValid && !submitting;
 
   const handleQuickAmount = useCallback((value: number) => {
     setAmount(String(value));
@@ -135,32 +203,60 @@ function WithdrawContent() {
     setShowConfirm(false);
     setSubmitting(true);
     try {
-      await walletApi.withdraw({
-        amount: numAmount,
-        bankName,
-        bankAccount: bankAccount.trim(),
-      });
+      if (selectedMethod === "BANK") {
+        await walletApi.withdraw(
+          {
+            amount: numAmount,
+            paymentMethod: "BANK_TRANSFER",
+            bankName,
+            bankAccount: bankAccount.trim(),
+          },
+          idempotencyKey.current
+        );
+      } else {
+        await walletApi.withdraw(
+          {
+            amount: numAmount,
+            paymentMethod: "GOPAY",
+            phoneNumber: phoneNumber.trim(),
+          },
+          idempotencyKey.current
+        );
+      }
+
+      const destination =
+        selectedMethod === "BANK"
+          ? `rekening ${bankName} Anda`
+          : `akun GoPay Anda`;
 
       toast.success("Penarikan berhasil!", {
-        description: `${formatRupiah(numAmount)} sedang diproses ke rekening ${bankName} Anda.`,
+        description: `${formatRupiah(numAmount)} sedang diproses ke ${destination}.`,
       });
 
       walletApi.getBalance().then(setWallet).catch(() => {});
       setTimeout(() => router.replace(ROUTES.WALLET), 1500);
     } catch {
       toast.error("Gagal memproses penarikan. Coba lagi.");
+      idempotencyKey.current = crypto.randomUUID();
     } finally {
       setSubmitting(false);
     }
-  }, [numAmount, bankName, bankAccount, router]);
+  }, [numAmount, selectedMethod, bankName, bankAccount, phoneNumber, router]);
+
+  const summaryDestination =
+    selectedMethod === "BANK"
+      ? `${bankName}${bankAccount ? ` ···${bankAccount.slice(-4)}` : ""}`
+      : `GoPay${phoneNumber ? ` ···${phoneNumber.slice(-4)}` : ""}`;
 
   return (
     <>
       {showConfirm && (
         <ConfirmDialog
           amount={numAmount}
+          method={selectedMethod}
           bankName={bankName}
           bankAccount={bankAccount.trim()}
+          phoneNumber={phoneNumber.trim()}
           onConfirm={handleConfirm}
           onCancel={() => setShowConfirm(false)}
         />
@@ -251,52 +347,105 @@ function WithdrawContent() {
               )}
             </div>
 
-            {/* Bank details */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-4">
-              <p className="text-sm font-semibold text-slate-700">
-                Rekening Tujuan
+            {/* Payment method selection */}
+            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60">
+              <p className="mb-3 text-sm font-semibold text-slate-700">
+                Metode Penarikan
               </p>
-
-              {/* Bank select */}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500">
-                  Bank
-                </label>
-                <div className="relative">
-                  <select
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-9 text-sm font-medium text-slate-700 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
-                  >
-                    {BANKS.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                </div>
-              </div>
-
-              {/* Account number */}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500">
-                  Nomor Rekening
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={bankAccount}
-                  onChange={(e) =>
-                    setBankAccount(e.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="Masukkan nomor rekening"
-                  required
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm font-medium tabular-nums text-slate-700 placeholder:text-slate-300 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+              <div className="grid gap-2 sm:grid-cols-2">
+                <MethodCard
+                  label="Transfer Bank"
+                  sublabel="BCA, Mandiri, BNI, BRI"
+                  icon={Building2}
+                  active={selectedMethod === "BANK"}
+                  onClick={() => setSelectedMethod("BANK")}
+                />
+                <MethodCard
+                  label="GoPay"
+                  sublabel="Tarik ke nomor HP"
+                  icon={Smartphone}
+                  active={selectedMethod === "GOPAY"}
+                  onClick={() => setSelectedMethod("GOPAY")}
                 />
               </div>
             </div>
+
+            {/* Bank details — shown when BANK selected */}
+            {selectedMethod === "BANK" && (
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-4">
+                <p className="text-sm font-semibold text-slate-700">
+                  Rekening Tujuan
+                </p>
+
+                {/* Bank select */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                    Bank
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-9 text-sm font-medium text-slate-700 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                    >
+                      {BANKS.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </div>
+                </div>
+
+                {/* Account number */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                    Nomor Rekening
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={bankAccount}
+                    onChange={(e) =>
+                      setBankAccount(e.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder="Masukkan nomor rekening"
+                    required
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm font-medium tabular-nums text-slate-700 placeholder:text-slate-300 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* GoPay details — shown when GOPAY selected */}
+            {selectedMethod === "GOPAY" && (
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-4">
+                <p className="text-sm font-semibold text-slate-700">
+                  Detail GoPay
+                </p>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                    Nomor Telepon
+                  </label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) =>
+                      setPhoneNumber(e.target.value.replace(/[^\d+]/g, ""))
+                    }
+                    placeholder="08xxxxxxxxxx"
+                    required
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm font-medium tabular-nums text-slate-700 placeholder:text-slate-300 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-400">
+                    Gunakan format 08xx atau +62xx
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Submit */}
             <button
@@ -347,10 +496,9 @@ function WithdrawContent() {
               </div>
 
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Rekening</span>
+                <span className="text-slate-500">Tujuan</span>
                 <span className="font-semibold text-slate-900">
-                  {bankName}
-                  {bankAccount ? ` ···${bankAccount.slice(-4)}` : ""}
+                  {summaryDestination}
                 </span>
               </div>
 
@@ -358,7 +506,7 @@ function WithdrawContent() {
                 <span className="text-slate-500">Estimasi</span>
                 <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
                   <Clock className="h-3.5 w-3.5" />
-                  1–2 Hari Kerja
+                  {selectedMethod === "GOPAY" ? "Instan" : "1–2 Hari Kerja"}
                 </span>
               </div>
 
