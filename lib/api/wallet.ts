@@ -13,6 +13,20 @@ export async function getBalance(): Promise<Wallet> {
   return data;
 }
 
+/** Helper to parse Java LocalDateTime Array to ISO String */
+function normalizeTransaction(tx: unknown): Transaction {
+  if (!tx) return tx as Transaction;
+  const t = tx as Record<string, unknown>;
+  let dateStr = t.createdAt;
+  if (Array.isArray(dateStr)) {
+    const [y, m, d, h = 0, min = 0, s = 0, ns = 0] = dateStr as number[];
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ms = Math.floor(ns / 1_000_000);
+    dateStr = `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}:${pad(s)}.${String(ms).padStart(3, "0")}`;
+  }
+  return { ...t, createdAt: dateStr } as Transaction;
+}
+
 /** POST /api/wallet/topup */
 export async function topUp(
   data: TopUpRequest,
@@ -40,12 +54,12 @@ export async function topUp(
     idempotencyKey: key,
   };
 
-  const { data: res } = await client.post<Transaction>(
-    "/api/wallet/topup",
+  const { data: res } = await client.post<unknown>(
+    "/api/wallet/top-up",
     payload,
     { headers: { "Idempotency-Key": key } }
   );
-  return res;
+  return normalizeTransaction(res);
 }
 
 /** POST /api/wallet/withdraw */
@@ -75,12 +89,12 @@ export async function withdraw(
     idempotencyKey: key,
   };
 
-  const { data: res } = await client.post<Transaction>(
+  const { data: res } = await client.post<unknown>(
     "/api/wallet/withdraw",
     payload,
     { headers: { "Idempotency-Key": key } }
   );
-  return res;
+  return normalizeTransaction(res);
 }
 
 /** GET /api/wallet/transactions */
@@ -88,13 +102,13 @@ export async function getTransactions(
   page = 0,
   size = 20
 ): Promise<PaginatedResponse<Transaction>> {
-  const { data } = await client.get<PaginatedResponse<Transaction> | Transaction[]>(
+  const { data } = await client.get<unknown>(
     "/api/wallet/transactions",
     { params: { page, size } }
   );
   if (Array.isArray(data)) {
     return {
-      content: data,
+      content: data.map(normalizeTransaction),
       page: 0,
       size: data.length,
       totalElements: data.length,
@@ -102,13 +116,17 @@ export async function getTransactions(
       last: true,
     };
   }
-  return data;
+  const paginated = data as PaginatedResponse<unknown>;
+  return {
+    ...paginated,
+    content: (paginated.content || []).map(normalizeTransaction) as Transaction[],
+  } as PaginatedResponse<Transaction>;
 }
 
 /** GET /api/wallet/transactions/:id */
 export async function getTransactionById(id: string): Promise<Transaction> {
-  const { data } = await client.get<Transaction>(
+  const { data } = await client.get<unknown>(
     `/api/wallet/transactions/${id}`
   );
-  return data;
+  return normalizeTransaction(data);
 }
