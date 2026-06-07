@@ -18,7 +18,6 @@ import { AuthGuard } from "@/components/providers/AuthGuard";
 import { BalanceCard } from "@/components/features/wallet/BalanceCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn, formatRupiah } from "@/lib/utils";
-import { PaymentMethod } from "@/constants/enums";
 import { ROUTES } from "@/constants/routes";
 import * as walletApi from "@/lib/api/wallet";
 import type { Wallet } from "@/types/api";
@@ -36,6 +35,8 @@ const QUICK_AMOUNTS = [
 const BANKS = ["BCA", "Mandiri", "BNI", "BRI"];
 
 const MAX_AMOUNT = 100_000_000;
+
+type SelectedMethod = "BANK" | "GOPAY";
 
 /* ─── Payment method card ────────────────────────────────────────────────── */
 
@@ -107,12 +108,14 @@ function MethodCard({
 function TopUpContent() {
   const router = useRouter();
 
-  const [wallet,      setWallet]      = useState<Wallet | null>(null);
-  const [amount,      setAmount]      = useState("");
-  const [bankName,    setBankName]    = useState("BCA");
-  const [accountNum,  setAccountNum]  = useState("");
-  const [submitting,  setSubmitting]  = useState(false);
-  const [success,     setSuccess]     = useState(false);
+  const [wallet,         setWallet]         = useState<Wallet | null>(null);
+  const [amount,         setAmount]         = useState("");
+  const [selectedMethod, setSelectedMethod] = useState<SelectedMethod>("BANK");
+  const [bankName,       setBankName]       = useState("BCA");
+  const [accountNum,     setAccountNum]     = useState("");
+  const [phoneNumber,    setPhoneNumber]    = useState("");
+  const [submitting,     setSubmitting]     = useState(false);
+  const [success,        setSuccess]        = useState(false);
 
   const idempotencyKey = useRef(crypto.randomUUID());
 
@@ -122,7 +125,13 @@ function TopUpContent() {
 
   const numAmount = parseFloat(amount) || 0;
   const amountValid = numAmount > 0 && numAmount <= MAX_AMOUNT;
-  const canSubmit = amountValid && accountNum.trim().length > 0 && !submitting;
+
+  const detailsValid =
+    selectedMethod === "BANK"
+      ? accountNum.trim().length > 0
+      : phoneNumber.trim().length >= 10;
+
+  const canSubmit = amountValid && detailsValid && !submitting;
 
   const handleQuickAmount = useCallback((value: number) => {
     setAmount(String(value));
@@ -135,15 +144,26 @@ function TopUpContent() {
 
       setSubmitting(true);
       try {
-        await walletApi.topUp(
-          {
-            amount: numAmount,
-            paymentMethod: PaymentMethod.BANK_TRANSFER,
-            bankName,
-            accountNumber: accountNum.trim(),
-          },
-          idempotencyKey.current
-        );
+        if (selectedMethod === "BANK") {
+          await walletApi.topUp(
+            {
+              amount: numAmount,
+              paymentMethod: "BANK_TRANSFER",
+              bankName,
+              accountNumber: accountNum.trim(),
+            },
+            idempotencyKey.current
+          );
+        } else {
+          await walletApi.topUp(
+            {
+              amount: numAmount,
+              paymentMethod: "GOPAY",
+              phoneNumber: phoneNumber.trim(),
+            },
+            idempotencyKey.current
+          );
+        }
 
         setSuccess(true);
         confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
@@ -162,8 +182,13 @@ function TopUpContent() {
         setSubmitting(false);
       }
     },
-    [canSubmit, numAmount, bankName, accountNum, router]
+    [canSubmit, numAmount, selectedMethod, bankName, accountNum, phoneNumber, router]
   );
+
+  const methodLabel =
+    selectedMethod === "BANK"
+      ? `Transfer Bank (${bankName})`
+      : "GoPay";
 
   return (
     <div className="min-h-screen bg-white">
@@ -250,15 +275,15 @@ function TopUpContent() {
                 label="Transfer Bank"
                 sublabel="BCA, Mandiri, BNI, BRI"
                 icon={Building2}
-                active={true}
-                onClick={() => {}}
+                active={selectedMethod === "BANK"}
+                onClick={() => setSelectedMethod("BANK")}
               />
               <MethodCard
                 label="GoPay"
+                sublabel="Bayar dengan nomor HP"
                 icon={Smartphone}
-                active={false}
-                disabled
-                onClick={() => {}}
+                active={selectedMethod === "GOPAY"}
+                onClick={() => setSelectedMethod("GOPAY")}
               />
               <MethodCard
                 label="OVO"
@@ -277,52 +302,82 @@ function TopUpContent() {
             </div>
           </div>
 
-          {/* Bank details */}
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-4">
-            <p className="text-sm font-semibold text-slate-700">
-              Detail Transfer Bank
-            </p>
+          {/* Bank details — shown when BANK selected */}
+          {selectedMethod === "BANK" && (
+            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-4">
+              <p className="text-sm font-semibold text-slate-700">
+                Detail Transfer Bank
+              </p>
 
-            {/* Bank select */}
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-500">
-                Bank Tujuan
-              </label>
-              <div className="relative">
-                <select
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-9 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                >
-                  {BANKS.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              {/* Bank select */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                  Bank Tujuan
+                </label>
+                <div className="relative">
+                  <select
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-9 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  >
+                    {BANKS.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+              </div>
+
+              {/* Account number */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                  Nomor Rekening
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={accountNum}
+                  onChange={(e) =>
+                    setAccountNum(e.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="Masukkan nomor rekening"
+                  required
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm font-medium tabular-nums text-slate-700 placeholder:text-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
               </div>
             </div>
+          )}
 
-            {/* Account number */}
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-500">
-                Nomor Rekening
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={accountNum}
-                onChange={(e) =>
-                  setAccountNum(e.target.value.replace(/\D/g, ""))
-                }
-                placeholder="Masukkan nomor rekening"
-                required
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm font-medium tabular-nums text-slate-700 placeholder:text-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
+          {/* GoPay details — shown when GOPAY selected */}
+          {selectedMethod === "GOPAY" && (
+            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100/60 space-y-4">
+              <p className="text-sm font-semibold text-slate-700">
+                Detail GoPay
+              </p>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                  Nomor Telepon
+                </label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) =>
+                    setPhoneNumber(e.target.value.replace(/[^\d+]/g, ""))
+                  }
+                  placeholder="08xxxxxxxxxx"
+                  required
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-sm font-medium tabular-nums text-slate-700 placeholder:text-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Gunakan format 08xx atau +62xx
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Submit */}
           <button
@@ -379,7 +434,7 @@ function TopUpContent() {
             <div className="flex justify-between text-sm">
               <span className="text-slate-500">Metode</span>
               <span className="font-semibold text-slate-900">
-                Transfer Bank ({bankName})
+                {methodLabel}
               </span>
             </div>
 

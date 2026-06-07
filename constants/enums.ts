@@ -46,6 +46,7 @@ export const PaymentMethod = {
   WALLET:      "WALLET",
   BANK_TRANSFER: "BANK_TRANSFER",
   VIRTUAL_ACCOUNT: "VIRTUAL_ACCOUNT",
+  GOPAY:       "GOPAY",
 } as const;
 export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 
