@@ -18,38 +18,67 @@ export async function topUp(
   data: TopUpRequest,
   idempotencyKey?: string
 ): Promise<Transaction> {
+  const key = idempotencyKey ?? crypto.randomUUID();
+
+  const paymentDetails: Record<string, string> =
+    data.paymentMethod === "BANK_TRANSFER" || data.paymentMethod === "VIRTUAL_ACCOUNT"
+      ? {
+        bankName: data.bankName ?? "",
+        accountNumber: data.accountNumber ?? "",
+      }
+      : data.paymentMethod === "GOPAY"
+        ? { phoneNumber: data.phoneNumber ?? "" }
+        : {};
+
+  const method =
+    data.paymentMethod === "BANK_TRANSFER" ? "BANK" : data.paymentMethod;
+
   const payload = {
     amount: data.amount,
-    method: data.paymentMethod === "BANK_TRANSFER" ? "BANK" : data.paymentMethod,
-    paymentDetails: {
-      bankName: data.bankName,
-      accountNumber: data.accountNumber,
-    },
-    idempotencyKey: idempotencyKey,
+    method,
+    paymentDetails,
+    idempotencyKey: key,
   };
 
   const { data: res } = await client.post<Transaction>(
     "/api/wallet/topup",
     payload,
-    idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined
+    { headers: { "Idempotency-Key": key } }
   );
   return res;
 }
 
 /** POST /api/wallet/withdraw */
-export async function withdraw(data: WithdrawRequest): Promise<Transaction> {
+export async function withdraw(
+  data: WithdrawRequest,
+  idempotencyKey?: string
+): Promise<Transaction> {
+  const key = idempotencyKey ?? crypto.randomUUID();
+
+  const method =
+    data.paymentMethod === "BANK_TRANSFER" ? "BANK" : (data.paymentMethod ?? "BANK");
+
+  const paymentDetails: Record<string, string> =
+    method === "BANK"
+      ? {
+        bankName: data.bankName ?? "",
+        accountNumber: data.bankAccount ?? "",
+      }
+      : method === "GOPAY"
+        ? { phoneNumber: data.phoneNumber ?? "" }
+        : {};
+
   const payload = {
     amount: data.amount,
-    method: "BANK",
-    paymentDetails: {
-      bankName: data.bankName,
-      accountNumber: data.bankAccount,
-    },
+    method,
+    paymentDetails,
+    idempotencyKey: key,
   };
 
   const { data: res } = await client.post<Transaction>(
     "/api/wallet/withdraw",
-    payload
+    payload,
+    { headers: { "Idempotency-Key": key } }
   );
   return res;
 }

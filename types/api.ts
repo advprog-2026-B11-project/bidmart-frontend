@@ -105,6 +105,7 @@ export interface TopUpRequest {
   paymentMethod: PaymentMethod;
   bankName?: string;
   accountNumber?: string;
+  phoneNumber?: string;
 }
 
 /* ─── Category ───────────────────────────────────────────────────────────── */
@@ -288,8 +289,10 @@ export interface DeviceSession {
 
 export interface WithdrawRequest {
   amount: number;
-  bankAccount: string;
-  bankName: string;
+  paymentMethod: PaymentMethod;
+  bankAccount?: string;
+  bankName?: string;
+  phoneNumber?: string;
 }
 
 /* ─── Listing (extended) ─────────────────────────────────────────────────── */
