@@ -21,7 +21,7 @@ export async function topUp(
   const key = idempotencyKey ?? crypto.randomUUID();
 
   const paymentDetails: Record<string, string> =
-    data.paymentMethod === "BANK_TRANSFER" || data.paymentMethod === "BANK"
+    data.paymentMethod === "BANK_TRANSFER"
       ? {
           bankName: data.bankName ?? "",
           accountNumber: data.accountNumber ?? "",
