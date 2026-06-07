@@ -21,11 +21,11 @@ export async function topUp(
   const key = idempotencyKey ?? crypto.randomUUID();
 
   const paymentDetails: Record<string, string> =
-    data.paymentMethod === "BANK_TRANSFER" || data.paymentMethod === "BANK"
+    data.paymentMethod === "BANK_TRANSFER" || data.paymentMethod === "VIRTUAL_ACCOUNT"
       ? {
-          bankName: data.bankName ?? "",
-          accountNumber: data.accountNumber ?? "",
-        }
+        bankName: data.bankName ?? "",
+        accountNumber: data.accountNumber ?? "",
+      }
       : data.paymentMethod === "GOPAY"
         ? { phoneNumber: data.phoneNumber ?? "" }
         : {};
@@ -61,9 +61,9 @@ export async function withdraw(
   const paymentDetails: Record<string, string> =
     method === "BANK"
       ? {
-          bankName: data.bankName ?? "",
-          accountNumber: data.bankAccount ?? "",
-        }
+        bankName: data.bankName ?? "",
+        accountNumber: data.bankAccount ?? "",
+      }
       : method === "GOPAY"
         ? { phoneNumber: data.phoneNumber ?? "" }
         : {};
