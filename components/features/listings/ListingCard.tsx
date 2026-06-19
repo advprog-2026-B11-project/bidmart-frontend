@@ -12,11 +12,12 @@ const statusConfig: Record<
   { label: string; variant: "success" | "warning" | "danger" | "info" | "default" }
 > = {
   ACTIVE:    { label: "Aktif",       variant: "success" },
-  EXTENDED:  { label: "Aktif",       variant: "success" },
+  EXTENDED:  { label: "Diperpanjang", variant: "warning" },
   ENDED:     { label: "Berakhir",    variant: "default" },
   CLOSED:    { label: "Berakhir",    variant: "default" },
   SOLD:      { label: "Terjual",     variant: "info"    },
   WON:       { label: "Terjual",     variant: "info"    },
+  UNSOLD:    { label: "Tidak Terjual", variant: "default" },
   DRAFT:     { label: "Draft",       variant: "default" },
   CANCELLED: { label: "Dibatalkan",  variant: "danger"  },
 };
@@ -87,7 +88,8 @@ export function ListingCard({ listing, className, preview = false }: ListingCard
               {formatRupiah(price)}
             </p>
           </div>
-          {listing.status === AuctionStatus.ACTIVE && (
+          {(listing.status === AuctionStatus.ACTIVE ||
+            listing.status === AuctionStatus.EXTENDED) && (
             <CountdownTimer endTime={listing.endAt} />
           )}
         </div>

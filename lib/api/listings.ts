@@ -6,16 +6,29 @@ import type {
   ListingSearchParams,
   PaginatedResponse,
   Category,
+  UserProfile,
 } from "@/types/api";
 
-type BackendListing = Omit<Partial<Listing>, "category"> & {
-  category?: Partial<Category>;
-  categoryId?: string;
+type BackendListing = {
+  id?: string;
   sellerId?: string;
+  categoryId?: string;
+  title?: string;
+  description?: string;
   imageUrl?: string | null;
+  startingPrice?: number;
+  reservePrice?: number | null;
   endTime?: string;
+  status?: Listing["status"];
+  auctionType?: string;
   currentHighestBid?: number | null;
+  currentHighestBidderId?: string | null;
+  createdAt?: string;
+  category?: Partial<Category>;
+  seller?: UserProfile;
 };
+
+type ListingPayloadSource = CreateListingRequest | UpdateListingRequest;
 
 function fallbackCategory(categoryId = ""): Category {
   return {
@@ -28,43 +41,34 @@ function fallbackCategory(categoryId = ""): Category {
 }
 
 function normalizeListing(raw: BackendListing): Listing {
-  let imageUrls = raw.imageUrls ?? (raw.imageUrl ? [raw.imageUrl] : []);
-  imageUrls = imageUrls.filter((url) => url && !url.includes("example.com"));
-  
-  let mainImageUrl = raw.imageUrl ?? imageUrls[0] ?? null;
-  if (mainImageUrl && mainImageUrl.includes("example.com")) {
-    mainImageUrl = imageUrls[0] ?? null;
-  }
-
-  const currentPrice = raw.currentPrice ?? raw.currentHighestBid ?? raw.startingPrice ?? 0;
-  const endAt = raw.endAt ?? raw.endTime ?? "";
   const categoryId = raw.categoryId ?? raw.category?.id ?? "";
+  const imageUrl = raw.imageUrl && !raw.imageUrl.includes("example.com")
+    ? raw.imageUrl
+    : null;
+  const currentPrice = raw.currentHighestBid ?? raw.startingPrice ?? 0;
+  const endAt = raw.endTime ?? "";
 
   return {
-    ...raw,
     id: raw.id ?? "",
-    sellerId: raw.sellerId ?? raw.seller?.id ?? "",
-    categoryId,
     title: raw.title ?? "",
     description: raw.description ?? "",
-    imageUrl: mainImageUrl,
-    imageUrls,
+    imageUrls: imageUrl ? [imageUrl] : [],
     startingPrice: raw.startingPrice ?? 0,
     currentPrice,
-    currentHighestBid: raw.currentHighestBid ?? null,
     reservePrice: raw.reservePrice ?? null,
-    buyNowPrice: raw.buyNowPrice ?? null,
+    buyNowPrice: null,
     status: raw.status ?? "ACTIVE",
+    categoryId,
     category: raw.category?.id ? (raw.category as Category) : fallbackCategory(categoryId),
+    sellerId: raw.sellerId,
     seller: raw.seller,
-    totalBids: raw.totalBids ?? (raw.currentHighestBid ? 1 : 0),
-    currentHighestBidderId: raw.currentHighestBidderId,
-    startAt: raw.startAt ?? raw.createdAt ?? "",
+    totalBids: raw.currentHighestBid ? 1 : 0,
+    currentHighestBidderId: raw.currentHighestBidderId ?? undefined,
+    startAt: raw.createdAt ?? "",
     endAt,
-    endTime: raw.endTime ?? endAt,
     createdAt: raw.createdAt ?? "",
-    updatedAt: raw.updatedAt ?? raw.createdAt ?? "",
-  } as Listing;
+    updatedAt: raw.createdAt ?? "",
+  };
 }
 
 function normalizePage(data: PaginatedResponse<BackendListing>): PaginatedResponse<Listing> {
@@ -74,24 +78,40 @@ function normalizePage(data: PaginatedResponse<BackendListing>): PaginatedRespon
   };
 }
 
-function toBackendPayload(data: CreateListingRequest | UpdateListingRequest) {
+function toBackendPayload(data: ListingPayloadSource) {
+  const imageUrl = data.imageUrls?.[0] ?? "";
+  const endTime = (data as UpdateListingRequest).endTime ?? data.endAt;
+
   return {
-    ...data,
-    imageUrl: data.imageUrls?.[0],
-    endTime: (data as UpdateListingRequest).endTime ?? data.endAt,
-    imageUrls: undefined,
-    startAt: undefined,
-    endAt: undefined,
+    categoryId: data.categoryId,
+    title: data.title,
+    description: data.description,
+    imageUrl,
+    startingPrice: data.startingPrice,
+    reservePrice: data.reservePrice,
+    endTime,
+    auctionType: "ENGLISH",
   };
 }
 
-/** POST /api/listings */
+function unwrapListing(data: unknown): BackendListing {
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid listing response");
+  }
+
+  const record = data as Record<string, unknown>;
+  if (record.data && typeof record.data === "object") {
+    return record.data as BackendListing;
+  }
+
+  return data as BackendListing;
+}
+
 export async function create(data: CreateListingRequest): Promise<Listing> {
   const { data: res } = await client.post<BackendListing>("/api/listings", toBackendPayload(data));
   return normalizeListing(res);
 }
 
-/** GET /api/listings */
 export async function getAll(
   page = 0,
   size = 20
@@ -103,7 +123,6 @@ export async function getAll(
   return normalizePage(data);
 }
 
-/** GET /api/listings/active */
 export async function getActive(
   page = 0,
   size = 20
@@ -115,7 +134,6 @@ export async function getActive(
   return normalizePage(data);
 }
 
-/** GET /api/listings/search?keyword=&category=&minPrice=&maxPrice= */
 export async function search(
   params: ListingSearchParams
 ): Promise<PaginatedResponse<Listing>> {
@@ -126,20 +144,11 @@ export async function search(
   return normalizePage(data);
 }
 
-/** GET /api/listings/:id */
 export async function getById(id: string): Promise<Listing> {
   const { data } = await client.get<unknown>(`/api/listings/${id}`);
-  if (!data || typeof data !== "object") throw new Error("Invalid response");
-  // Handle backends that wrap single-entity responses under a "data" key
-  const raw =
-    "data" in (data as Record<string, unknown>) &&
-    typeof (data as Record<string, unknown>).data === "object"
-      ? ((data as Record<string, unknown>).data as BackendListing)
-      : (data as BackendListing);
-  return normalizeListing(raw);
+  return normalizeListing(unwrapListing(data));
 }
 
-/** PATCH /api/listings/:id */
 export async function update(
   id: string,
   data: UpdateListingRequest
@@ -151,7 +160,6 @@ export async function update(
   return normalizeListing(res);
 }
 
-/** DELETE /api/listings/:id */
 export async function deleteListing(id: string): Promise<void> {
   await client.delete(`/api/listings/${id}`);
 }

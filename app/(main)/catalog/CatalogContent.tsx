@@ -16,30 +16,6 @@ import type { Listing } from "@/types/api";
 
 const PAGE_SIZE = 12;
 
-/* ─── Dummy preview listing ─────────────────────────────────────────────── */
-
-const DUMMY_LISTING: Listing = {
-  id: "preview-dummy",
-  title: "Lukisan Abstrak — Karya Original Seniman Lokal",
-  description: "Ini adalah contoh tampilan kartu karya lelang di BidMart.",
-  imageUrls: [
-    "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&q=80",
-  ],
-  startingPrice: 1_500_000,
-  currentPrice: 2_750_000,
-  reservePrice: null,
-  buyNowPrice: null,
-  status: AuctionStatus.ACTIVE,
-  categoryId: "cat-1",
-  category: { id: "cat-1", name: "Seni Lukis", slug: "seni-lukis", description: null, imageUrl: null },
-  sellerId: "seller-1",
-  totalBids: 7,
-  startAt: "2026-01-01T00:00:00Z",
-  endAt: "2026-12-31T23:59:00Z",
-  createdAt: "2026-01-01T00:00:00Z",
-  updatedAt: "2026-01-01T00:00:00Z",
-};
-
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 function sortListings(listings: Listing[], sort: FilterValues["sort"]): Listing[] {
@@ -55,17 +31,33 @@ function sortListings(listings: Listing[], sort: FilterValues["sort"]): Listing[
 }
 
 function filterByStatus(listings: Listing[], status: FilterValues["status"]): Listing[] {
-  if (status === "active") return listings.filter((l) => l.status === AuctionStatus.ACTIVE);
-  if (status === "ended") {
+  if (status === "active") {
     return listings.filter(
-      (l) =>
-        l.status === AuctionStatus.ENDED ||
-        l.status === AuctionStatus.CLOSED ||
-        l.status === AuctionStatus.SOLD ||
-        l.status === AuctionStatus.WON
+      (listing) =>
+        listing.status === AuctionStatus.ACTIVE ||
+        listing.status === AuctionStatus.EXTENDED
     );
   }
+
+  if (status === "ended") {
+    return listings.filter(
+      (listing) =>
+        listing.status === AuctionStatus.CLOSED ||
+        listing.status === AuctionStatus.WON ||
+        isListingStatus(listing, "UNSOLD")
+    );
+  }
+
   return listings;
+}
+
+function parsePrice(value: string): number | undefined {
+  const price = Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : undefined;
+}
+
+function isListingStatus(listing: Listing, status: string): boolean {
+  return listing.status === status;
 }
 
 function parseFiltersFromUrl(sp: URLSearchParams): FilterValues {
@@ -139,8 +131,8 @@ export default function CatalogContent() {
         ? listingsApi.search({
             keyword:  f.keyword  || undefined,
             category: f.category || undefined,
-            minPrice: f.minPrice ? Number(f.minPrice) : undefined,
-            maxPrice: f.maxPrice ? Number(f.maxPrice) : undefined,
+            minPrice: parsePrice(f.minPrice),
+            maxPrice: parsePrice(f.maxPrice),
             page:     nextPage,
             size:     PAGE_SIZE,
           })
@@ -152,7 +144,15 @@ export default function CatalogContent() {
         const items  = res.content ?? [];
         const active = filterByStatus(items, f.status);
         const sorted = sortListings(active, f.sort);
-        setListings((prev) => (append ? [...prev, ...sorted] : sorted));
+        
+        setListings((prev) => {
+          if (!append) return sorted;
+
+          const merged = new Map(prev.map((listing) => [listing.id, listing]));
+          sorted.forEach((listing) => merged.set(listing.id, listing));
+
+          return sortListings(Array.from(merged.values()), f.sort);
+        });
         setHasMore(!res.last);
         setPage(nextPage);
       });
@@ -258,13 +258,9 @@ export default function CatalogContent() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
-                  {/* Dummy preview card — always first */}
-                  <ListingCard listing={DUMMY_LISTING} preview />
-
                   {listings.map((l) => (
                     <ListingCard key={l.id} listing={l} />
                   ))}
-
                   {loadingMore &&
                     Array.from({ length: 3 }).map((_, i) => (
                       <ListingCardSkeleton key={`more-${i}`} />
